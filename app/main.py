@@ -2,10 +2,16 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine
 from app import models
+from app.routers import cuentas, transacciones, rendimientos, dashboard
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Control de Finanzas")
+
+app.include_router(cuentas.router)
+app.include_router(transacciones.router)
+app.include_router(rendimientos.router)
+app.include_router(dashboard.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
