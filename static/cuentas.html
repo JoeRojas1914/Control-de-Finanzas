@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuentas</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <span class="nav-logo">💰 Finanzas</span>
+    <div class="nav-links">
+      <a href="/static/index.html"   class="nav-link">Dashboard</a>
+      <a href="/static/cuentas.html" class="nav-link active">Cuentas</a>
+      <a href="/static/gastos.html"  class="nav-link">Gastos</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="card">
+      <h2 class="card-title">Mis cuentas</h2>
+      <div id="lista-cuentas-detalle">Cargando...</div>
+    </div>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/cuentas.js"></script>
+</body>
+</html>

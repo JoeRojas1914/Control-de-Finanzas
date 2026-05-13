@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine
 from app import models
-from app.routers import cuentas, transacciones, rendimientos, dashboard
+from app.routers import cuentas, transacciones, rendimientos, dashboard, categorias
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -12,6 +12,7 @@ app.include_router(cuentas.router)
 app.include_router(transacciones.router)
 app.include_router(rendimientos.router)
 app.include_router(dashboard.router)
+app.include_router(categorias.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
