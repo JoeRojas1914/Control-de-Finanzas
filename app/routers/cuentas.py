@@ -42,11 +42,3 @@ def rendimientos_cuenta(cuenta_id: int, db: Session = Depends(get_db)):
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     return resumen_rendimientos(cuenta.rendimientos)
-
-
-from app.models import Cuenta, Categoria
-from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate, CategoriaOut
-
-@router.get("/categorias/", response_model=list[CategoriaOut], tags=["categorias"])
-def listar_categorias(db: Session = Depends(get_db)):
-    return db.query(Categoria).all()

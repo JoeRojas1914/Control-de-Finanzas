@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <span class="nav-logo">💰 Finanzas</span>
+    <div class="nav-links">
+      <a href="/static/index.html"    class="nav-link">Dashboard</a>
+      <a href="/static/cuentas.html"  class="nav-link">Cuentas</a>
+      <a href="/static/gastos.html"   class="nav-link">Gastos</a>
+      <a href="/static/reportes.html" class="nav-link active">Reportes</a>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <div class="grid-2">
+      <div class="card">
+        <h2 class="card-title">Gastos por categoría — este mes</h2>
+        <canvas id="grafica-categorias" height="260"></canvas>
+        <div id="sin-gastos" style="text-align:center;color:#999;padding:40px;display:none">
+          Sin gastos registrados este mes
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Rendimientos acumulados — este mes</h2>
+        <div id="tabla-rendimientos">Cargando...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Evolución del patrimonio — últimos 30 días</h2>
+      <canvas id="grafica-patrimonio" height="120"></canvas>
+    </div>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/reportes.js"></script>
+</body>
+</html>
