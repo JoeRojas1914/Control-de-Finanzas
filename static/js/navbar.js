@@ -17,7 +17,6 @@ function cargarNavbar() {
   const links = [
     { href: 'index.html',    label: 'Dashboard' },
     { href: 'cuentas.html',  label: 'Cuentas'   },
-    { href: 'gastos.html',   label: 'Gastos'     },
     { href: 'historial.html', label: 'Historial' },
     { href: 'reportes.html', label: 'Reportes'   },
   ];
