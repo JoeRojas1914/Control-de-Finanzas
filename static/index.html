@@ -3,20 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Finanzas</title>
+  <title>Dashboard — Finanzas</title>
+  <script src="/static/js/navbar.js"></script>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-  <nav class="navbar">
-    <span class="nav-logo">💰 Finanzas</span>
-    <div class="nav-links">
-      <a href="/static/index.html"    class="nav-link active">Dashboard</a>
-      <a href="/static/cuentas.html"  class="nav-link">Cuentas</a>
-      <a href="/static/gastos.html"   class="nav-link">Gastos</a>
-      <a href="/static/reportes.html" class="nav-link">Reportes</a>
-    </div>
-  </nav>
+  <nav class="navbar" id="navbar"></nav>
 
   <main class="container">
 
@@ -81,6 +74,8 @@
   </main>
 
   <script src="/static/js/api.js"></script>
+  <script src="/static/js/navbar.js"></script>
   <script src="/static/js/dashboard.js"></script>
+
 </body>
 </html>

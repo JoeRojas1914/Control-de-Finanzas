@@ -1,3 +1,9 @@
+const oscuro = document.body.classList.contains('dark');
+const colorTexto = oscuro ? '#888888' : '#888888';
+const colorGrid  = oscuro ? '#2e2e2e' : '#f0f0ee';
+
+Chart.defaults.color = colorTexto;
+
 const COLORES = [
   '#1D9E75', '#534AB7', '#D85A30', '#378ADD',
   '#BA7517', '#D4537E', '#639922', '#888780'
@@ -67,7 +73,7 @@ async function cargarPatrimonioHistorico() {
             callback: val => fmt(val),
             font: { size: 11 }
           },
-          grid: { color: '#f0f0ee' }
+          grid: { color: colorGrid }
         },
         x: {
           ticks: { font: { size: 11 } },
