@@ -19,23 +19,23 @@ async function registrarGasto() {
   const cuenta_id    = parseInt(document.getElementById('cuenta').value);
   const categoria_id = parseInt(document.getElementById('categoria').value);
   const fecha        = document.getElementById('fecha').value;
-  const msg          = document.getElementById('gasto-msg');
 
   if (!descripcion || isNaN(monto)) {
-    msg.textContent = 'Completa todos los campos';
-    msg.className = 'msg err';
+    toast('Completa todos los campos', 'err');
     return;
   }
 
-  await post('/api/transacciones/', {
-    descripcion, monto, cuenta_id, categoria_id,
-    fecha: new Date(fecha).toISOString()
-  });
-
-  msg.textContent = '✓ Movimiento guardado';
-  msg.className = 'msg ok';
-  document.getElementById('descripcion').value = '';
-  document.getElementById('monto').value = '';
+  try {
+    await post('/api/transacciones/', {
+      descripcion, monto, cuenta_id, categoria_id,
+      fecha: new Date(fecha).toISOString()
+    });
+    toast('Movimiento guardado correctamente', 'ok');
+    document.getElementById('descripcion').value = '';
+    document.getElementById('monto').value = '';
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 iniciar();

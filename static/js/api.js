@@ -11,7 +11,9 @@ async function post(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Error en la operación');
+  return data;
 }
 
 async function patch(path, body) {
@@ -20,7 +22,16 @@ async function patch(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Error en la operación');
+  return data;
+}
+
+async function del(path) {
+  const res = await fetch(BASE + path, { method: 'DELETE' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'No se pudo completar la operación');
+  return data;
 }
 
 function fmt(monto) {
@@ -33,9 +44,4 @@ function fmtFecha(iso) {
   return new Date(iso).toLocaleDateString('es-MX', {
     day: '2-digit', month: 'short', year: 'numeric'
   });
-}
-
-async function del(path) {
-  const res = await fetch(BASE + path, { method: 'DELETE' });
-  return res.json();
 }

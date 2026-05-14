@@ -46,19 +46,20 @@ async function cargarDashboard() {
 async function registrarRendimiento() {
   const cuenta_id = parseInt(document.getElementById('rend-cuenta').value);
   const monto     = parseFloat(document.getElementById('rend-monto').value);
-  const msg       = document.getElementById('rend-msg');
 
   if (!monto || monto <= 0) {
-    msg.textContent = 'Ingresa un monto válido';
-    msg.className = 'msg err';
+    toast('Ingresa un monto válido', 'err');
     return;
   }
 
-  await post('/api/rendimientos/', { cuenta_id, monto });
-  msg.textContent = '✓ Rendimiento registrado';
-  msg.className = 'msg ok';
-  document.getElementById('rend-monto').value = '';
-  cargarDashboard();
+  try {
+    await post('/api/rendimientos/', { cuenta_id, monto });
+    toast('Rendimiento registrado correctamente', 'ok');
+    document.getElementById('rend-monto').value = '';
+    cargarDashboard();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 cargarDashboard();

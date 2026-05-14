@@ -10,7 +10,7 @@
   --btn-text:   #ffffff;
 }
 
-body.dark {
+html.dark {
   --bg:         #141414;
   --bg-card:    #1f1f1f;
   --bg-hover:   #2a2a2a;
@@ -223,3 +223,35 @@ input:focus, select:focus {
 }
 
 .btn-danger:hover { background: #7f1f1f; opacity: 1; }
+
+/* Toasts */
+#toast-contenedor {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 320px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: auto;
+}
+
+.toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-ok  { background: #0f6e56; color: #fff; }
+.toast-err { background: #a32d2d; color: #fff; }

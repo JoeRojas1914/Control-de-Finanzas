@@ -1,6 +1,6 @@
 function aplicarTema() {
   const oscuro = localStorage.getItem('tema') === 'obscuro';
-  document.body.classList.toggle('dark', oscuro);
+  document.documentElement.classList.toggle('dark', oscuro);
   const btn = document.getElementById('btn-tema');
   if (btn) btn.textContent = oscuro ? 'Claro' : 'Obscuro';
 }

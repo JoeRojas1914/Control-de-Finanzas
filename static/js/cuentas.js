@@ -1,15 +1,12 @@
 function abrirModal() {
-  const overlay = document.getElementById('modal-overlay');
-  overlay.style.display = 'flex';
+  document.getElementById('modal-overlay').style.display = 'flex';
 }
 
 function cerrarModal() {
-  const overlay = document.getElementById('modal-overlay');
-  overlay.style.display = 'none';
+  document.getElementById('modal-overlay').style.display = 'none';
   document.getElementById('nueva-nombre').value = '';
   document.getElementById('nueva-saldo').value  = '';
   document.getElementById('nueva-limite').value = '';
-  document.getElementById('nueva-msg').textContent = '';
 }
 
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
@@ -20,7 +17,7 @@ async function cargarCuentas() {
   const cuentas    = await get('/api/cuentas/');
   const contenedor = document.getElementById('lista-cuentas-detalle');
 
-contenedor.innerHTML = cuentas.map(c => {
+  contenedor.innerHTML = cuentas.map(c => {
     const esCredito = c.tipo === 'credito';
     return `
       <div class="cuenta-row">
@@ -76,14 +73,24 @@ async function actualizarSaldo(id, esCredito) {
   const input = document.getElementById('saldo-' + id);
   const valor = parseFloat(input.value);
   const saldo = esCredito ? -Math.abs(valor) : valor;
-  await patch('/api/cuentas/' + id + '/saldo', { saldo });
-  cargarCuentas();
+  try {
+    await patch('/api/cuentas/' + id + '/saldo', { saldo });
+    toast('Saldo actualizado', 'ok');
+    cargarCuentas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 async function actualizarLimite(id) {
   const limite = parseFloat(document.getElementById('limite-' + id).value);
-  await patch('/api/cuentas/' + id + '/limite', { limite });
-  cargarCuentas();
+  try {
+    await patch('/api/cuentas/' + id + '/limite', { limite });
+    toast('Límite de crédito actualizado', 'ok');
+    cargarCuentas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 async function agregarCuenta() {
@@ -91,30 +98,31 @@ async function agregarCuenta() {
   const tipo   = document.getElementById('nueva-tipo').value;
   const saldo  = parseFloat(document.getElementById('nueva-saldo').value) || 0;
   const limite = parseFloat(document.getElementById('nueva-limite').value) || null;
-  const msg    = document.getElementById('nueva-msg');
 
   if (!nombre) {
-    msg.textContent = 'El nombre es obligatorio';
-    msg.className = 'msg err';
+    toast('El nombre de la cuenta es obligatorio', 'err');
     return;
   }
 
-  await post('/api/cuentas/', { nombre, tipo, saldo, limite });
-
-  cerrarModal();
-  cargarCuentas();
+  try {
+    await post('/api/cuentas/', { nombre, tipo, saldo, limite });
+    cerrarModal();
+    toast(`Cuenta "${nombre}" creada`, 'ok');
+    cargarCuentas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 async function eliminarCuenta(id, nombre) {
-  const confirmar = confirm(`¿Seguro que quieres eliminar la cuenta "${nombre}"?\nEsta acción no se puede deshacer.`);
-  if (!confirmar) return;
+  if (!confirm(`¿Seguro que quieres eliminar la cuenta "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
 
-  const res = await del('/api/cuentas/' + id);
-
-  if (res.ok) {
+  try {
+    await del('/api/cuentas/' + id);
+    toast(`Cuenta "${nombre}" eliminada`, 'ok');
     cargarCuentas();
-  } else {
-    alert(res.detail || 'No se pudo eliminar la cuenta');
+  } catch (e) {
+    toast(e.message, 'err');
   }
 }
 
@@ -122,7 +130,5 @@ document.getElementById('nueva-tipo').addEventListener('change', function () {
   document.getElementById('grupo-limite').style.display =
     this.value === 'credito' ? 'block' : 'none';
 });
-
-
 
 cargarCuentas();
