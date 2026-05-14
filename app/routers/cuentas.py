@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Cuenta
-from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate, LimiteUpdate
+from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate, LimiteUpdate, NombreUpdate
 from app.utils import resumen_rendimientos
 
 router = APIRouter(prefix="/api/cuentas", tags=["cuentas"])
@@ -49,6 +49,19 @@ def actualizar_limite(cuenta_id: int, datos: LimiteUpdate, db: Session = Depends
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     cuenta.limite = datos.limite
+    db.commit()
+    db.refresh(cuenta)
+    return cuenta
+
+@router.patch("/{cuenta_id}/nombre", response_model=CuentaOut)
+def actualizar_nombre(cuenta_id: int, datos: NombreUpdate, db: Session = Depends(get_db)):
+    cuenta = db.query(Cuenta).filter(Cuenta.id == cuenta_id).first()
+    if not cuenta:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    nombre = datos.nombre.strip()
+    if not nombre:
+        raise HTTPException(status_code=422, detail="El nombre no puede estar vacío")
+    cuenta.nombre = nombre
     db.commit()
     db.refresh(cuenta)
     return cuenta

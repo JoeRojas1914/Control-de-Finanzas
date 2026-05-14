@@ -7,14 +7,15 @@ from app.schemas import TransaccionCreate, TransaccionOut
 router = APIRouter(prefix="/api/transacciones", tags=["transacciones"])
 
 @router.get("/", response_model=list[TransaccionOut])
-def listar_transacciones(limite: int = 20, db: Session = Depends(get_db)):
-    return (
+def listar_transacciones(limite: int = 20, cuenta_id: int = None, db: Session = Depends(get_db)):
+    q = (
         db.query(Transaccion)
         .options(joinedload(Transaccion.cuenta), joinedload(Transaccion.categoria))
         .order_by(Transaccion.fecha.desc())
-        .limit(limite)
-        .all()
     )
+    if cuenta_id is not None:
+        q = q.filter(Transaccion.cuenta_id == cuenta_id)
+    return q.limit(limite).all()
 
 @router.post("/", response_model=TransaccionOut)
 def crear_transaccion(datos: TransaccionCreate, db: Session = Depends(get_db)):

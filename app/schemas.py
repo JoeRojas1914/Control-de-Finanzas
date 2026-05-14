@@ -59,3 +59,6 @@ class TransaccionOut(TransaccionCreate):
 
 class LimiteUpdate(BaseModel):
     limite: float
+
+class NombreUpdate(BaseModel):
+    nombre: str

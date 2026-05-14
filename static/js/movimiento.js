@@ -38,6 +38,7 @@ async function registrarMovimiento() {
     cerrarMovimiento();
     if (typeof cargarDashboard === 'function') cargarDashboard();
     if (typeof cargarHistorial === 'function') cargarHistorial();
+    if (typeof cargarCuentas  === 'function') cargarCuentas(true);
   } catch (e) {
     toast(e.message, 'err');
   }

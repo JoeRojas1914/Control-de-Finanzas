@@ -8,14 +8,15 @@ from app.schemas import RendimientoCreate, RendimientoOut
 router = APIRouter(prefix="/api/rendimientos", tags=["rendimientos"])
 
 @router.get("/")
-def listar_rendimientos(limite: int = 30, db: Session = Depends(get_db)):
-    rendimientos = (
+def listar_rendimientos(limite: int = 30, cuenta_id: int = None, db: Session = Depends(get_db)):
+    q = (
         db.query(RendimientoDiario)
         .options(joinedload(RendimientoDiario.cuenta))
         .order_by(RendimientoDiario.fecha.desc())
-        .limit(limite)
-        .all()
     )
+    if cuenta_id is not None:
+        q = q.filter(RendimientoDiario.cuenta_id == cuenta_id)
+    rendimientos = q.limit(limite).all()
     return [
         {
             "id":            r.id,
