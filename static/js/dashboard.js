@@ -1,3 +1,5 @@
+let cuentasDebito = [];
+
 async function cargarDashboard() {
   const data = await get('/api/dashboard/');
 
@@ -7,10 +9,9 @@ async function cargarDashboard() {
   document.getElementById('deuda').textContent        = fmt(data.deuda_tarjeta);
 
   const cuentas = await get('/api/cuentas/');
-  const debito  = cuentas.filter(c => c.tipo === 'debito');
+  cuentasDebito = cuentas.filter(c => c.tipo === 'debito');
 
-  const lista = document.getElementById('lista-cuentas');
-  lista.innerHTML = debito.map(c => `
+  document.getElementById('lista-cuentas').innerHTML = cuentasDebito.map(c => `
     <div class="cuenta-row">
       <div class="cuenta-badge">${c.nombre.slice(0,2).toUpperCase()}</div>
       <div class="cuenta-info">
@@ -23,8 +24,7 @@ async function cargarDashboard() {
     </div>
   `).join('');
 
-  const select = document.getElementById('rend-cuenta');
-  select.innerHTML = debito.map(c =>
+  document.getElementById('rend-cuenta').innerHTML = cuentasDebito.map(c =>
     `<option value="${c.id}">${c.nombre}</option>`
   ).join('');
 
