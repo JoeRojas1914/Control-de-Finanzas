@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/reportes", tags=["reportes"])
 
 @router.get("/gastos-por-categoria")
 def gastos_por_categoria(db: Session = Depends(get_db)):
-    inicio_mes = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0)
+    inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0)
 
     resultados = (
         db.query(
@@ -35,7 +35,7 @@ def gastos_por_categoria(db: Session = Depends(get_db)):
 
 @router.get("/patrimonio-historico")
 def patrimonio_historico(db: Session = Depends(get_db)):
-    hoy   = datetime.utcnow().date()
+    hoy   = datetime.now().date()
     dias  = [(hoy - timedelta(days=i)) for i in range(29, -1, -1)]
 
     cuentas_debito = db.query(Cuenta).filter(Cuenta.tipo == TipoCuenta.debito).all()
@@ -43,6 +43,8 @@ def patrimonio_historico(db: Session = Depends(get_db)):
 
     transacciones = (
         db.query(Transaccion)
+        .join(Cuenta, Transaccion.cuenta_id == Cuenta.id)
+        .filter(Cuenta.tipo == TipoCuenta.debito)
         .filter(Transaccion.fecha >= datetime.combine(dias[0], datetime.min.time()))
         .all()
     )

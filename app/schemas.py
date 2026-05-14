@@ -56,3 +56,6 @@ class TransaccionOut(TransaccionCreate):
 
     class Config:
         from_attributes = True
+
+class LimiteUpdate(BaseModel):
+    limite: float

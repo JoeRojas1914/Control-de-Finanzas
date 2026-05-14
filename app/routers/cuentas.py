@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Cuenta
-from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate
+from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate, LimiteUpdate
 from app.utils import resumen_rendimientos
 
 router = APIRouter(prefix="/api/cuentas", tags=["cuentas"])
@@ -42,3 +42,33 @@ def rendimientos_cuenta(cuenta_id: int, db: Session = Depends(get_db)):
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     return resumen_rendimientos(cuenta.rendimientos)
+
+@router.patch("/{cuenta_id}/limite", response_model=CuentaOut)
+def actualizar_limite(cuenta_id: int, datos: LimiteUpdate, db: Session = Depends(get_db)):
+    cuenta = db.query(Cuenta).filter(Cuenta.id == cuenta_id).first()
+    if not cuenta:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    cuenta.limite = datos.limite
+    db.commit()
+    db.refresh(cuenta)
+    return cuenta
+
+@router.delete("/{cuenta_id}")
+def eliminar_cuenta(cuenta_id: int, db: Session = Depends(get_db)):
+    cuenta = db.query(Cuenta).filter(Cuenta.id == cuenta_id).first()
+    if not cuenta:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+
+    from app.models import Transaccion, RendimientoDiario
+    tiene_tx   = db.query(Transaccion).filter(Transaccion.cuenta_id == cuenta_id).first()
+    tiene_rend = db.query(RendimientoDiario).filter(RendimientoDiario.cuenta_id == cuenta_id).first()
+
+    if tiene_tx or tiene_rend:
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede eliminar una cuenta con transacciones o rendimientos registrados"
+        )
+
+    db.delete(cuenta)
+    db.commit()
+    return {"ok": True}

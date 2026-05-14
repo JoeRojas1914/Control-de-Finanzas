@@ -34,3 +34,8 @@ function fmtFecha(iso) {
     day: '2-digit', month: 'short', year: 'numeric'
   });
 }
+
+async function del(path) {
+  const res = await fetch(BASE + path, { method: 'DELETE' });
+  return res.json();
+}

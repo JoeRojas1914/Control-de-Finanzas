@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
-from app.models import Transaccion, Cuenta
+from app.models import Transaccion, Cuenta, TipoCuenta
 from app.schemas import TransaccionCreate, TransaccionOut
 
 router = APIRouter(prefix="/api/transacciones", tags=["transacciones"])
@@ -22,8 +22,18 @@ def crear_transaccion(datos: TransaccionCreate, db: Session = Depends(get_db)):
     db.add(tx)
 
     cuenta = db.query(Cuenta).filter(Cuenta.id == datos.cuenta_id).first()
-    if cuenta:
-        cuenta.saldo += datos.monto
+    if not cuenta:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+
+    if cuenta.tipo == TipoCuenta.credito and cuenta.limite is not None and datos.monto < 0:
+        nueva_deuda = abs(cuenta.saldo + datos.monto)
+        if nueva_deuda > cuenta.limite:
+            raise HTTPException(
+                status_code=400,
+                detail=f"La transacción supera el límite de crédito de ${cuenta.limite:,.2f}"
+            )
+
+    cuenta.saldo += datos.monto
 
     db.commit()
     db.refresh(tx)

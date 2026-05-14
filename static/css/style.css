@@ -215,3 +215,11 @@ input:focus, select:focus {
 }
 
 .btn-sm:hover { opacity: 0.85; }
+
+.btn-danger {
+  background: #a32d2d;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:hover { background: #7f1f1f; opacity: 1; }

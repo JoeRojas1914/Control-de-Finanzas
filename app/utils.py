@@ -1,7 +1,7 @@
 from datetime import datetime
 
 def resumen_rendimientos(rendimientos: list) -> dict:
-    hoy        = datetime.utcnow().date()
+    hoy        = datetime.now().date()
     inicio_mes = hoy.replace(day=1)
 
     diario  = sum(r.monto for r in rendimientos if r.fecha.date() == hoy)

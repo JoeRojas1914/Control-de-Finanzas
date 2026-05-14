@@ -16,7 +16,7 @@ class Cuenta(Base):
     tipo      = Column(Enum(TipoCuenta), nullable=False)
     saldo     = Column(Float, default=0.0)
     limite    = Column(Float, nullable=True)
-    creada_en = Column(DateTime, default=datetime.utcnow)
+    creada_en = Column(DateTime, default=datetime.now)
 
     rendimientos  = relationship("RendimientoDiario", back_populates="cuenta")
     transacciones = relationship("Transaccion",       back_populates="cuenta")
