@@ -6,21 +6,10 @@
   <title>Iniciar sesión — Finanzas</title>
   <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
   <link rel="stylesheet" href="/static/css/style.css">
-  <style>
-    .login-wrap {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .login-card { width: 100%; max-width: 360px; }
-    .login-titulo { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
-    .login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-    .login-error { font-size: 13px; color: #a32d2d; margin-top: 10px; min-height: 20px; }
-  </style>
 </head>
 <body>
+
+  <button class="tema-btn" id="btn-tema" onclick="toggleTema()">Obscuro</button>
 
   <div class="login-wrap">
     <div class="card login-card">
@@ -42,7 +31,20 @@
   </div>
 
   <script>
-    // Si ya hay credenciales válidas, redirigir directamente
+    function actualizarBtn() {
+      const oscuro = localStorage.getItem('tema') === 'obscuro';
+      document.getElementById('btn-tema').textContent = oscuro ? 'Claro' : 'Obscuro';
+    }
+
+    function toggleTema() {
+      const oscuro = localStorage.getItem('tema') === 'obscuro';
+      localStorage.setItem('tema', oscuro ? 'claro' : 'obscuro');
+      document.documentElement.classList.toggle('dark', !oscuro);
+      actualizarBtn();
+    }
+
+    actualizarBtn();
+
     const authGuardado = localStorage.getItem('finanzas_auth');
     if (authGuardado) {
       fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
