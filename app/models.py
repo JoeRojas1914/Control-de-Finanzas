@@ -52,6 +52,19 @@ class Transaccion(Base):
     cuenta    = relationship("Cuenta",    back_populates="transacciones")
     categoria = relationship("Categoria", back_populates="transacciones")
 
+class Transferencia(Base):
+    __tablename__ = "transferencias"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    cuenta_origen_id  = Column(Integer, ForeignKey("cuentas.id"))
+    cuenta_destino_id = Column(Integer, ForeignKey("cuentas.id"))
+    monto             = Column(Float, nullable=False)
+    descripcion       = Column(String, nullable=True)
+    fecha             = Column(DateTime, default=datetime.now)
+
+    cuenta_origen  = relationship("Cuenta", foreign_keys=[cuenta_origen_id])
+    cuenta_destino = relationship("Cuenta", foreign_keys=[cuenta_destino_id])
+
 class Presupuesto(Base):
     __tablename__ = "presupuestos"
 

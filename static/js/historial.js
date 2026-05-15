@@ -1,10 +1,11 @@
-let transacciones  = [];
-let rendimientos   = [];
-let cuentasDebito  = [];
-let todasCuentas   = [];
+let transacciones   = [];
+let rendimientos    = [];
+let transferencias  = [];
+let cuentasDebito   = [];
+let todasCuentas    = [];
 let todasCategorias = [];
-let tabActual      = 'todos';
-let mesActual      = '';
+let tabActual       = 'todos';
+let mesActual       = '';
 
 async function cargarHistorial() {
   const cuentas = await get('/api/cuentas/');
@@ -12,9 +13,10 @@ async function cargarHistorial() {
   cuentasDebito   = cuentas.filter(x => x.tipo === 'debito');
   todasCategorias = await get('/api/categorias/');
 
-  [transacciones, rendimientos] = await Promise.all([
+  [transacciones, rendimientos, transferencias] = await Promise.all([
     get('/api/transacciones/?limite=1000'),
     get('/api/rendimientos/?limite=1000'),
+    get('/api/transferencias/'),
   ]);
 
   poblarMeses();
@@ -70,7 +72,18 @@ function cambiarTab(tab, btn) {
   tabActual = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  renderizar();
+
+  const esTrf = tab === 'transferencias';
+  document.getElementById('tabla-wrap').style.display             = esTrf ? 'none' : '';
+  document.getElementById('tabla-transferencias-wrap').style.display = esTrf ? '' : 'none';
+
+  // Los filtros de búsqueda/categoría/cuenta no aplican al tab de transferencias
+  document.getElementById('filtro-busqueda').style.display  = esTrf ? 'none' : '';
+  document.getElementById('filtro-categoria').style.display = esTrf ? 'none' : '';
+  document.getElementById('filtro-cuenta').style.display    = esTrf ? 'none' : '';
+
+  if (esTrf) renderizarTransferencias();
+  else renderizar();
 }
 
 function cambiarMes() {
@@ -165,6 +178,43 @@ function renderizar() {
         </td>
       </tr>`;
   }).join('');
+}
+
+/* ── Transferencias ── */
+
+function renderizarTransferencias() {
+  const trfMes = mesActual
+    ? transferencias.filter(t => t.fecha.startsWith(mesActual))
+    : transferencias;
+
+  const tbody = document.getElementById('tabla-transferencias');
+  if (!trfMes.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:24px">Sin transferencias para este período</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trfMes.map(t => `
+    <tr>
+      <td>${t.cuenta_origen}</td>
+      <td>${t.cuenta_destino}</td>
+      <td style="color:var(--text-muted)">${t.descripcion || '—'}</td>
+      <td>${fmtFecha(t.fecha)}</td>
+      <td style="text-align:right;font-weight:500">${fmt(t.monto)}</td>
+      <td style="text-align:right">
+        <button class="btn-sm btn-danger" onclick="eliminarTransferencia(${t.id})">Eliminar</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function eliminarTransferencia(id) {
+  if (!confirm('¿Eliminar esta transferencia?\nSe revertirán los saldos de ambas cuentas.')) return;
+  try {
+    await del(`/api/transferencias/${id}`);
+    toast('Transferencia eliminada', 'ok');
+    await cargarHistorial();
+    renderizarTransferencias();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 /* ── Editar / eliminar transacción ── */

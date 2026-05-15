@@ -59,10 +59,11 @@
         <button class="tab" onclick="cambiarTab('rendimientos', this)">Rendimientos</button>
         <button class="tab" onclick="cambiarTab('ingresos', this)">Ingresos</button>
         <button class="tab" onclick="cambiarTab('gastos', this)">Gastos</button>
+        <button class="tab" onclick="cambiarTab('transferencias', this)">Transferencias</button>
       </div>
 
-      <!-- Tabla -->
-      <table class="tabla">
+      <!-- Tabla movimientos -->
+      <table class="tabla" id="tabla-wrap">
         <thead>
           <tr>
             <th>Tipo</th>
@@ -75,6 +76,21 @@
           </tr>
         </thead>
         <tbody id="tabla-historial"></tbody>
+      </table>
+
+      <!-- Tabla transferencias -->
+      <table class="tabla" id="tabla-transferencias-wrap" style="display:none">
+        <thead>
+          <tr>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Descripción</th>
+            <th>Fecha</th>
+            <th style="text-align:right">Monto</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-transferencias"></tbody>
       </table>
 
     </div>
