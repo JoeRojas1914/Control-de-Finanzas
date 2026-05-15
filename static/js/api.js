@@ -24,7 +24,7 @@ async function post(path, body) {
   });
   if (res.status === 401) { manejar401(); return; }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Error en la operación');
+  if (!res.ok) throw new Error(_extraerError(data, 'Error en la operación'));
   return data;
 }
 
@@ -36,7 +36,7 @@ async function patch(path, body) {
   });
   if (res.status === 401) { manejar401(); return; }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Error en la operación');
+  if (!res.ok) throw new Error(_extraerError(data, 'Error en la operación'));
   return data;
 }
 
@@ -44,8 +44,17 @@ async function del(path) {
   const res = await fetch(BASE + path, { method: 'DELETE', headers: getAuthHeader() });
   if (res.status === 401) { manejar401(); return; }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'No se pudo completar la operación');
+  if (!res.ok) throw new Error(_extraerError(data, 'No se pudo completar la operación'));
   return data;
+}
+
+function _extraerError(data, fallback) {
+  if (!data.detail) return fallback;
+  if (typeof data.detail === 'string') return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail.map(e => e.msg || JSON.stringify(e)).join('. ');
+  }
+  return fallback;
 }
 
 function fmt(monto) {

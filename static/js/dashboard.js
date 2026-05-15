@@ -53,6 +53,10 @@ async function registrarRendimiento() {
   const monto     = parseFloat(document.getElementById('rend-monto').value);
   const fechaStr  = document.getElementById('rend-fecha').value;
 
+  if (!cuenta_id || isNaN(cuenta_id)) {
+    toast('Necesitas crear una cuenta de débito primero', 'err');
+    return;
+  }
   if (!monto || monto <= 0) {
     toast('Ingresa un monto válido', 'err');
     return;

@@ -41,8 +41,16 @@ async function registrarMovimiento() {
   const categoria_id = parseInt(document.getElementById('mov-categoria').value);
   const fecha        = document.getElementById('mov-fecha').value;
 
-  if (!descripcion || isNaN(monto)) {
-    toast('Completa todos los campos', 'err');
+  if (isNaN(cuenta_id)) {
+    toast('Necesitas crear una cuenta primero', 'err');
+    return;
+  }
+  if (!descripcion) {
+    toast('La descripción es obligatoria', 'err');
+    return;
+  }
+  if (isNaN(monto)) {
+    toast('Ingresa un monto válido', 'err');
     return;
   }
 
@@ -68,7 +76,11 @@ async function registrarTransferencia() {
   const descripcion = document.getElementById('trf-descripcion').value.trim() || null;
   const fecha      = document.getElementById('trf-fecha').value;
 
-  if (origen_id === destino_id) { toast('Elige cuentas distintas', 'err'); return; }
+  if (isNaN(origen_id) || isNaN(destino_id)) {
+    toast('Necesitas crear al menos dos cuentas para transferir', 'err');
+    return;
+  }
+  if (origen_id === destino_id) { toast('La cuenta origen y destino no pueden ser la misma', 'err'); return; }
   if (!monto || monto <= 0)     { toast('El monto debe ser mayor a cero', 'err'); return; }
 
   try {
