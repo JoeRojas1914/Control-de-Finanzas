@@ -11,8 +11,14 @@ function toggleTema() {
   aplicarTema();
 }
 
+function cerrarSesion() {
+  localStorage.removeItem('finanzas_auth');
+  window.location.href = '/static/login.html';
+}
+
 function cargarNavbar() {
-  const pagina = window.location.pathname.split('/').pop();
+  const pagina  = window.location.pathname.split('/').pop();
+  const hayAuth = !!localStorage.getItem('finanzas_auth');
 
   const links = [
     { href: 'index.html',         label: 'Dashboard'     },
@@ -34,6 +40,7 @@ function cargarNavbar() {
       `).join('')}
     </div>
     <button class="dark-toggle" id="btn-tema" onclick="toggleTema()">Obscuro</button>
+    ${hayAuth ? `<button class="dark-toggle" style="color:#c0392b" onclick="cerrarSesion()">Salir</button>` : ''}
   `;
 
   aplicarTema();

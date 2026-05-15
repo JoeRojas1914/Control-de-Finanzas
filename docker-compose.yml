@@ -1,0 +1,12 @@
+services:
+  finanzas:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/finanzas.db
+      - AUTH_USER=admin
+      - AUTH_PASS=cambiar_esto
+    restart: unless-stopped

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión — Finanzas</title>
+  <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card { width: 100%; max-width: 360px; }
+    .login-titulo { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+    .login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+    .login-error { font-size: 13px; color: #a32d2d; margin-top: 10px; min-height: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrap">
+    <div class="card login-card">
+      <h1 class="login-titulo">FINANZAS</h1>
+      <p class="login-sub">Inicia sesión para continuar</p>
+
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="usuario" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="clave" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button class="btn-primary" id="btn-login" onclick="iniciarSesion()">Entrar</button>
+      <p class="login-error" id="error-msg"></p>
+    </div>
+  </div>
+
+  <script>
+    // Si ya hay credenciales válidas, redirigir directamente
+    const authGuardado = localStorage.getItem('finanzas_auth');
+    if (authGuardado) {
+      fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
+        .then(r => { if (r.ok) window.location.href = '/static/index.html'; });
+    }
+
+    document.getElementById('clave').addEventListener('keydown', e => {
+      if (e.key === 'Enter') iniciarSesion();
+    });
+
+    async function iniciarSesion() {
+      const usuario  = document.getElementById('usuario').value.trim();
+      const clave    = document.getElementById('clave').value;
+      const errorMsg = document.getElementById('error-msg');
+      const btn      = document.getElementById('btn-login');
+
+      if (!usuario || !clave) {
+        errorMsg.textContent = 'Ingresa usuario y contraseña';
+        return;
+      }
+
+      btn.textContent = 'Verificando...';
+      btn.disabled    = true;
+      errorMsg.textContent = '';
+
+      const encoded = btoa(usuario + ':' + clave);
+      try {
+        const res = await fetch('/api/cuentas/', {
+          headers: { 'Authorization': 'Basic ' + encoded }
+        });
+        if (res.ok) {
+          localStorage.setItem('finanzas_auth', encoded);
+          window.location.href = '/static/index.html';
+        } else {
+          errorMsg.textContent = 'Usuario o contraseña incorrectos';
+        }
+      } catch {
+        errorMsg.textContent = 'No se pudo conectar con el servidor';
+      } finally {
+        btn.textContent = 'Entrar';
+        btn.disabled    = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
