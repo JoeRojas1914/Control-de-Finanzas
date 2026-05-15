@@ -41,6 +41,9 @@ class CategoriaOut(BaseModel):
     class Config:
         from_attributes = True
 
+class CategoriaCreate(BaseModel):
+    nombre: str
+
 class TransaccionCreate(BaseModel):
     descripcion  : str
     monto        : float

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración — Finanzas</title>
+  <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <nav class="navbar" id="navbar"></nav>
+
+  <main class="container">
+
+    <!-- Categorías -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Categorías</h2>
+        <button class="btn-sm" onclick="abrirModalNueva()">+ Nueva categoría</button>
+      </div>
+      <div id="lista-categorias">Cargando...</div>
+    </div>
+
+    <!-- Preferencias -->
+    <div class="card">
+      <h2 class="card-title">Preferencias</h2>
+
+      <div class="cuenta-row">
+        <div class="cuenta-info">
+          <div class="cuenta-nombre">Modo oscuro</div>
+          <div style="font-size:12px;color:var(--text-muted)">Cambia la apariencia de la aplicación</div>
+        </div>
+        <button class="btn-sm" id="btn-tema-conf" onclick="toggleTemaConf()">—</button>
+      </div>
+
+    </div>
+
+    <!-- Exportar datos -->
+    <div class="card">
+      <h2 class="card-title">Exportar datos</h2>
+
+      <div class="cuenta-row">
+        <div class="cuenta-info">
+          <div class="cuenta-nombre">Transacciones (CSV)</div>
+          <div style="font-size:12px;color:var(--text-muted)">Descarga todas tus transacciones en formato CSV</div>
+        </div>
+        <button class="btn-sm" onclick="exportarTransacciones()">Descargar</button>
+      </div>
+
+      <div class="cuenta-row">
+        <div class="cuenta-info">
+          <div class="cuenta-nombre">Rendimientos (CSV)</div>
+          <div style="font-size:12px;color:var(--text-muted)">Descarga el historial de rendimientos registrados</div>
+        </div>
+        <button class="btn-sm" onclick="exportarRendimientos()">Descargar</button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal: nueva categoría -->
+  <div id="modal-nueva" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0">Nueva categoría</h2>
+        <button class="modal-close" onclick="cerrarModalNueva()">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="nueva-nombre" placeholder="ej: Ropa, Viajes...">
+      </div>
+      <button class="btn-primary" onclick="agregarCategoria()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Modal: renombrar categoría -->
+  <div id="modal-editar" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0">Renombrar categoría</h2>
+        <button class="modal-close" onclick="cerrarModalEditar()">✕</button>
+      </div>
+      <input type="hidden" id="editar-id">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="editar-nombre">
+      </div>
+      <button class="btn-primary" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/toast.js"></script>
+  <script src="/static/js/navbar.js"></script>
+  <script src="/static/js/movimiento.js"></script>
+  <script src="/static/js/configuracion.js"></script>
+
+</body>
+</html>

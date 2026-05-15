@@ -18,9 +18,12 @@ html.dark {
   --text:       #e8e8e5;
   --text-muted: #888888;
   --text-hint:  #666666;
-  --btn-bg:     #e8e8e5;
-  --btn-text:   #141414;
+  --btn-bg:     #323232;
+  --btn-text:   #d8d8d5;
 }
+
+html.dark .btn-sm    { border: 1px solid #454545; }
+html.dark .btn-primary { border: 1px solid #454545; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

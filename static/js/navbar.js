@@ -15,10 +15,11 @@ function cargarNavbar() {
   const pagina = window.location.pathname.split('/').pop();
 
   const links = [
-    { href: 'index.html',    label: 'Dashboard' },
-    { href: 'cuentas.html',  label: 'Cuentas'   },
-    { href: 'historial.html', label: 'Historial' },
-    { href: 'reportes.html', label: 'Reportes'   },
+    { href: 'index.html',         label: 'Dashboard'     },
+    { href: 'cuentas.html',       label: 'Cuentas'       },
+    { href: 'historial.html',     label: 'Historial'     },
+    { href: 'reportes.html',      label: 'Reportes'      },
+    { href: 'configuracion.html', label: 'Configuración' },
   ];
 
   const nav = document.getElementById('navbar');
