@@ -5,6 +5,9 @@ from fastapi import Request, HTTPException
 
 
 def verificar_credenciales(request: Request):
+    if not request.url.path.startswith("/api/"):
+        return  # Solo proteger endpoints de API
+
     auth_pass = os.getenv("AUTH_PASS", "")
     if not auth_pass:
         return  # Auth deshabilitada en desarrollo local
