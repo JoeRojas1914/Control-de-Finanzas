@@ -65,3 +65,21 @@ class LimiteUpdate(BaseModel):
 
 class NombreUpdate(BaseModel):
     nombre: str
+
+class RecurrenteCreate(BaseModel):
+    descripcion   : str
+    monto         : float
+    frecuencia    : str
+    proxima_fecha : datetime
+    cuenta_id     : int
+    categoria_id  : Optional[int] = None
+
+class RecurrenteOut(RecurrenteCreate):
+    id        : int
+    activa    : bool
+    creada_en : datetime
+    cuenta    : CuentaOut
+    categoria : Optional[CategoriaOut] = None
+
+    class Config:
+        from_attributes = True

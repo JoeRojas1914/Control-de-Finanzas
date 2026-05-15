@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -51,3 +51,26 @@ class Transaccion(Base):
 
     cuenta    = relationship("Cuenta",    back_populates="transacciones")
     categoria = relationship("Categoria", back_populates="transacciones")
+
+class FrecuenciaRecurrente(str, enum.Enum):
+    diaria    = "diaria"
+    semanal   = "semanal"
+    quincenal = "quincenal"
+    mensual   = "mensual"
+    anual     = "anual"
+
+class TransaccionRecurrente(Base):
+    __tablename__ = "transacciones_recurrentes"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    descripcion   = Column(String, nullable=False)
+    monto         = Column(Float, nullable=False)
+    frecuencia    = Column(Enum(FrecuenciaRecurrente), nullable=False)
+    proxima_fecha = Column(DateTime, nullable=False)
+    activa        = Column(Boolean, default=True)
+    creada_en     = Column(DateTime, default=datetime.now)
+    cuenta_id     = Column(Integer, ForeignKey("cuentas.id"))
+    categoria_id  = Column(Integer, ForeignKey("categorias.id"), nullable=True)
+
+    cuenta    = relationship("Cuenta")
+    categoria = relationship("Categoria")

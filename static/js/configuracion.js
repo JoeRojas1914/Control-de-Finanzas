@@ -1,4 +1,6 @@
-let categorias = [];
+let categorias   = [];
+let cuentasConf  = [];
+let categoriasConf = [];
 
 async function cargarCategorias() {
   categorias = await get('/api/categorias/');
@@ -167,6 +169,139 @@ async function exportarRendimientos() {
   }
 }
 
+// ── Recurrentes ───────────────────────────────────────────────
+
+const FRECUENCIA_LABEL = {
+  diaria: 'Diaria', semanal: 'Semanal', quincenal: 'Quincenal',
+  mensual: 'Mensual', anual: 'Anual'
+};
+
+async function cargarRecurrentes() {
+  const lista = await get('/api/recurrentes/');
+  const contenedor = document.getElementById('lista-recurrentes');
+  if (!lista || !lista.length) {
+    contenedor.innerHTML = '<div class="empty-state">Sin transacciones recurrentes</div>';
+    return;
+  }
+  contenedor.innerHTML = lista.map(r => `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">${r.descripcion}</div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${fmt(r.monto)} · ${FRECUENCIA_LABEL[r.frecuencia]} · próxima: ${fmtFecha(r.proxima_fecha)}
+          · ${r.cuenta.nombre}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleRec(${r.id}, ${r.activa})">
+          ${r.activa ? 'Pausar' : 'Activar'}
+        </button>
+        <button class="btn-sm" onclick="abrirModalRec(${r.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarRec(${r.id}, ${JSON.stringify(r.descripcion)})">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function abrirModalRec(id) {
+  [cuentasConf, categoriasConf] = await Promise.all([
+    get('/api/cuentas/'),
+    get('/api/categorias/'),
+  ]);
+
+  document.getElementById('rec-cuenta').innerHTML = cuentasConf.map(c =>
+    `<option value="${c.id}">${c.nombre}</option>`
+  ).join('');
+
+  document.getElementById('rec-categoria').innerHTML =
+    '<option value="">Sin categoría</option>' +
+    categoriasConf.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  if (id) {
+    const rec = await get(`/api/recurrentes/`).then(l => l.find(r => r.id === id));
+    document.getElementById('modal-rec-titulo').textContent = 'Editar recurrente';
+    document.getElementById('rec-id').value              = rec.id;
+    document.getElementById('rec-descripcion').value     = rec.descripcion;
+    document.getElementById('rec-monto').value           = rec.monto;
+    document.getElementById('rec-frecuencia').value      = rec.frecuencia;
+    document.getElementById('rec-proxima-fecha').value   = rec.proxima_fecha.split('T')[0];
+    document.getElementById('rec-cuenta').value          = rec.cuenta_id;
+    document.getElementById('rec-categoria').value       = rec.categoria_id || '';
+  } else {
+    document.getElementById('modal-rec-titulo').textContent = 'Nueva recurrente';
+    document.getElementById('rec-id').value              = '';
+    document.getElementById('rec-descripcion').value     = '';
+    document.getElementById('rec-monto').value           = '';
+    document.getElementById('rec-frecuencia').value      = 'mensual';
+    document.getElementById('rec-proxima-fecha').value   = new Date().toISOString().split('T')[0];
+    document.getElementById('rec-cuenta').value          = cuentasConf[0]?.id || '';
+    document.getElementById('rec-categoria').value       = '';
+  }
+
+  document.getElementById('modal-rec').classList.add('abierto');
+}
+
+function cerrarModalRec() {
+  document.getElementById('modal-rec').classList.remove('abierto');
+}
+
+document.getElementById('modal-rec').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalRec();
+});
+
+async function guardarRec() {
+  const id          = document.getElementById('rec-id').value;
+  const descripcion = document.getElementById('rec-descripcion').value.trim();
+  const monto       = parseFloat(document.getElementById('rec-monto').value);
+  const frecuencia  = document.getElementById('rec-frecuencia').value;
+  const fechaStr    = document.getElementById('rec-proxima-fecha').value;
+  const cuenta_id   = parseInt(document.getElementById('rec-cuenta').value);
+  const catVal      = document.getElementById('rec-categoria').value;
+  const categoria_id = catVal ? parseInt(catVal) : null;
+
+  if (!descripcion) { toast('La descripción es obligatoria', 'err'); return; }
+  if (!monto)       { toast('El monto es obligatorio', 'err'); return; }
+  if (!fechaStr)    { toast('La fecha es obligatoria', 'err'); return; }
+
+  const proxima_fecha = new Date(fechaStr + 'T12:00:00').toISOString();
+  const cuerpo = { descripcion, monto, frecuencia, proxima_fecha, cuenta_id, categoria_id };
+
+  try {
+    if (id) {
+      await patch(`/api/recurrentes/${id}`, cuerpo);
+      toast('Recurrente actualizada', 'ok');
+    } else {
+      await post('/api/recurrentes/', cuerpo);
+      toast('Recurrente creada', 'ok');
+    }
+    cerrarModalRec();
+    cargarRecurrentes();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarRec(id, descripcion) {
+  if (!confirm(`¿Eliminar "${descripcion}"?\nLas transacciones ya creadas permanecerán.`)) return;
+  try {
+    await del(`/api/recurrentes/${id}`);
+    toast(`"${descripcion}" eliminada`, 'ok');
+    cargarRecurrentes();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleRec(id, activa) {
+  try {
+    await patch(`/api/recurrentes/${id}/toggle`, {});
+    toast(activa ? 'Recurrente pausada' : 'Recurrente activada', 'ok');
+    cargarRecurrentes();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 cargarCategorias();
+cargarRecurrentes();
 sincronizarBtnTema();

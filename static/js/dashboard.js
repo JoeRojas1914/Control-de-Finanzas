@@ -1,6 +1,10 @@
 let cuentasDebito = [];
 
 async function cargarDashboard() {
+  const resultado = await post('/api/recurrentes/aplicar', {});
+  if (resultado?.aplicadas > 0)
+    toast(`${resultado.aplicadas} transacción(es) recurrente(s) aplicada(s)`, 'ok');
+
   const data = await get('/api/dashboard/');
 
   document.getElementById('patrimonio').textContent   = fmt(data.patrimonio);
