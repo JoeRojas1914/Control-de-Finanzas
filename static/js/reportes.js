@@ -13,10 +13,37 @@ async function cargarGraficas() {
   await Promise.all([
     cargarResumenMes(),
     cargarGastosPorCategoria(),
+    cargarPresupuestosReporte(),
     cargarIngresosVsGastos(),
     cargarPatrimonioHistorico(),
     cargarRendimientosMes(),
   ]);
+}
+
+async function cargarPresupuestosReporte() {
+  const lista = await get('/api/presupuestos/');
+  const card  = document.getElementById('card-presupuestos');
+  if (!lista.length) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  document.getElementById('lista-pres-reportes').innerHTML = lista.map(p => {
+    const pct   = Math.min(p.porcentaje, 100);
+    const cls   = p.porcentaje >= 100 ? 'over' : p.porcentaje >= 80 ? 'warn' : '';
+    const color = p.porcentaje >= 100 ? '#a32d2d' : p.porcentaje >= 80 ? '#BA7517' : 'var(--text-muted)';
+    return `
+      <div class="cuenta-row" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="cuenta-nombre">${p.categoria}</span>
+          <span style="font-size:12px;color:${color};font-weight:500">
+            ${fmt(p.gastado)} / ${fmt(p.monto_limite)}
+            (${p.porcentaje}%)
+          </span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function cargarResumenMes() {

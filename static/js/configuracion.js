@@ -169,6 +169,95 @@ async function exportarRendimientos() {
   }
 }
 
+// ── Presupuestos ──────────────────────────────────────────────
+
+async function cargarPresupuestos() {
+  const lista = await get('/api/presupuestos/');
+  const el    = document.getElementById('lista-presupuestos');
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty-state">Sin presupuestos definidos</div>';
+    return;
+  }
+  el.innerHTML = lista.map(p => {
+    const pct   = Math.min(p.porcentaje, 100);
+    const cls   = p.porcentaje >= 100 ? 'over' : p.porcentaje >= 80 ? 'warn' : '';
+    return `
+      <div class="cuenta-row" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="cuenta-nombre">${p.categoria}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:12px;color:var(--text-muted)">${fmt(p.gastado)} / ${fmt(p.monto_limite)}</span>
+            <button class="btn-sm" onclick="abrirModalPres(${p.id})">Editar</button>
+            <button class="btn-sm btn-danger" onclick="eliminarPres(${p.id}, ${JSON.stringify(p.categoria)})">Eliminar</button>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function abrirModalPres(id) {
+  const cats = await get('/api/categorias/');
+  document.getElementById('pres-categoria').innerHTML = cats.map(c =>
+    `<option value="${c.id}">${c.nombre}</option>`
+  ).join('');
+
+  if (id) {
+    const lista = await get('/api/presupuestos/');
+    const p     = lista.find(x => x.id === id);
+    document.getElementById('modal-pres-titulo').textContent = 'Editar presupuesto';
+    document.getElementById('pres-id').value                 = p.id;
+    document.getElementById('pres-categoria').value          = p.categoria_id;
+    document.getElementById('pres-limite').value             = p.monto_limite;
+  } else {
+    document.getElementById('modal-pres-titulo').textContent = 'Nuevo presupuesto';
+    document.getElementById('pres-id').value                 = '';
+    document.getElementById('pres-limite').value             = '';
+  }
+  document.getElementById('modal-pres').classList.add('abierto');
+}
+
+function cerrarModalPres() {
+  document.getElementById('modal-pres').classList.remove('abierto');
+}
+
+document.getElementById('modal-pres').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalPres();
+});
+
+async function guardarPres() {
+  const id           = document.getElementById('pres-id').value;
+  const categoria_id = parseInt(document.getElementById('pres-categoria').value);
+  const monto_limite = parseFloat(document.getElementById('pres-limite').value);
+  if (!monto_limite || monto_limite <= 0) { toast('Ingresa un límite válido', 'err'); return; }
+  try {
+    if (id) {
+      await patch(`/api/presupuestos/${id}`, { categoria_id, monto_limite });
+      toast('Presupuesto actualizado', 'ok');
+    } else {
+      await post('/api/presupuestos/', { categoria_id, monto_limite });
+      toast('Presupuesto creado', 'ok');
+    }
+    cerrarModalPres();
+    cargarPresupuestos();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarPres(id, categoria) {
+  if (!confirm(`¿Eliminar el presupuesto de "${categoria}"?`)) return;
+  try {
+    await del(`/api/presupuestos/${id}`);
+    toast(`Presupuesto de "${categoria}" eliminado`, 'ok');
+    cargarPresupuestos();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
 // ── Recurrentes ───────────────────────────────────────────────
 
 const FRECUENCIA_LABEL = {
@@ -303,5 +392,6 @@ async function toggleRec(id, activa) {
 
 // ── Init ──────────────────────────────────────────────────────
 cargarCategorias();
+cargarPresupuestos();
 cargarRecurrentes();
 sincronizarBtnTema();

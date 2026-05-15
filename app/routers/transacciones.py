@@ -42,3 +42,45 @@ def crear_transaccion(datos: TransaccionCreate, db: Session = Depends(get_db)):
         joinedload(Transaccion.cuenta),
         joinedload(Transaccion.categoria)
     ).filter(Transaccion.id == tx.id).first()
+
+@router.patch("/{tx_id}", response_model=TransaccionOut)
+def editar_transaccion(tx_id: int, datos: TransaccionCreate, db: Session = Depends(get_db)):
+    tx = db.query(Transaccion).filter(Transaccion.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+
+    cuenta_vieja = db.query(Cuenta).filter(Cuenta.id == tx.cuenta_id).first()
+    if cuenta_vieja:
+        cuenta_vieja.saldo -= tx.monto
+
+    tx.descripcion  = datos.descripcion
+    tx.monto        = datos.monto
+    tx.cuenta_id    = datos.cuenta_id
+    tx.categoria_id = datos.categoria_id
+    if datos.fecha:
+        tx.fecha = datos.fecha
+
+    cuenta_nueva = db.query(Cuenta).filter(Cuenta.id == datos.cuenta_id).first()
+    if not cuenta_nueva:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    cuenta_nueva.saldo += datos.monto
+
+    db.commit()
+    return db.query(Transaccion).options(
+        joinedload(Transaccion.cuenta),
+        joinedload(Transaccion.categoria)
+    ).filter(Transaccion.id == tx_id).first()
+
+@router.delete("/{tx_id}")
+def eliminar_transaccion(tx_id: int, db: Session = Depends(get_db)):
+    tx = db.query(Transaccion).filter(Transaccion.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+
+    cuenta = db.query(Cuenta).filter(Cuenta.id == tx.cuenta_id).first()
+    if cuenta:
+        cuenta.saldo -= tx.monto
+
+    db.delete(tx)
+    db.commit()
+    return {"ok": True}

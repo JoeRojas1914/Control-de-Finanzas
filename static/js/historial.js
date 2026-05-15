@@ -2,13 +2,15 @@ let transacciones  = [];
 let rendimientos   = [];
 let cuentasDebito  = [];
 let todasCuentas   = [];
+let todasCategorias = [];
 let tabActual      = 'todos';
 let mesActual      = '';
 
 async function cargarHistorial() {
   const cuentas = await get('/api/cuentas/');
-  todasCuentas  = cuentas;
-  cuentasDebito = cuentas.filter(x => x.tipo === 'debito');
+  todasCuentas    = cuentas;
+  cuentasDebito   = cuentas.filter(x => x.tipo === 'debito');
+  todasCategorias = await get('/api/categorias/');
 
   [transacciones, rendimientos] = await Promise.all([
     get('/api/transacciones/?limite=1000'),
@@ -157,9 +159,83 @@ function renderizar() {
         <td>${cuenta}</td>
         <td>${fmtFecha(f.fecha)}</td>
         <td style="text-align:right" class="${clase}">${signo}${fmt(f.monto)}</td>
-        <td></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn-sm" onclick="abrirEditarTx(${f.id})">Editar</button>
+          <button class="btn-sm btn-danger" onclick="eliminarTx(${f.id}, ${JSON.stringify(f.descripcion)})" style="margin-left:4px">Eliminar</button>
+        </td>
       </tr>`;
   }).join('');
+}
+
+/* ── Editar / eliminar transacción ── */
+
+function abrirEditarTx(id) {
+  const tx = transacciones.find(t => t.id === id);
+  if (!tx) return;
+
+  document.getElementById('tx-id').value          = tx.id;
+  document.getElementById('tx-descripcion').value = tx.descripcion;
+  document.getElementById('tx-monto').value       = tx.monto;
+  document.getElementById('tx-fecha').value       = tx.fecha.split('T')[0];
+
+  document.getElementById('tx-cuenta').innerHTML = todasCuentas.map(c =>
+    `<option value="${c.id}" ${c.id === tx.cuenta?.id ? 'selected' : ''}>${c.nombre}</option>`
+  ).join('');
+
+  document.getElementById('tx-categoria').innerHTML =
+    '<option value="">Sin categoría</option>' +
+    todasCategorias.map(c =>
+      `<option value="${c.id}" ${c.id === tx.categoria?.id ? 'selected' : ''}>${c.nombre}</option>`
+    ).join('');
+
+  document.getElementById('modal-editar-tx').classList.add('abierto');
+}
+
+function cerrarModalTx() {
+  document.getElementById('modal-editar-tx').classList.remove('abierto');
+}
+
+document.getElementById('modal-editar-tx').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalTx();
+});
+
+async function guardarTx() {
+  const id          = parseInt(document.getElementById('tx-id').value);
+  const descripcion = document.getElementById('tx-descripcion').value.trim();
+  const monto       = parseFloat(document.getElementById('tx-monto').value);
+  const fechaStr    = document.getElementById('tx-fecha').value;
+  const cuenta_id   = parseInt(document.getElementById('tx-cuenta').value);
+  const catVal      = document.getElementById('tx-categoria').value;
+  const categoria_id = catVal ? parseInt(catVal) : null;
+
+  if (!descripcion) { toast('La descripción es obligatoria', 'err'); return; }
+  if (isNaN(monto)) { toast('Ingresa un monto válido', 'err'); return; }
+
+  try {
+    await patch(`/api/transacciones/${id}`, {
+      descripcion,
+      monto,
+      cuenta_id,
+      categoria_id,
+      fecha: fechaStr ? new Date(fechaStr + 'T12:00:00').toISOString() : undefined,
+    });
+    cerrarModalTx();
+    toast('Transacción actualizada', 'ok');
+    await cargarHistorial();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarTx(id, descripcion) {
+  if (!confirm(`¿Eliminar "${descripcion}"?\nEl monto se revertirá en el saldo de la cuenta.`)) return;
+  try {
+    await del(`/api/transacciones/${id}`);
+    toast('Transacción eliminada', 'ok');
+    await cargarHistorial();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 /* ── Editar rendimiento ── */

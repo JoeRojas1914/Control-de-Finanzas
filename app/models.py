@@ -52,6 +52,16 @@ class Transaccion(Base):
     cuenta    = relationship("Cuenta",    back_populates="transacciones")
     categoria = relationship("Categoria", back_populates="transacciones")
 
+class Presupuesto(Base):
+    __tablename__ = "presupuestos"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    categoria_id = Column(Integer, ForeignKey("categorias.id"), unique=True)
+    monto_limite = Column(Float, nullable=False)
+    creado_en    = Column(DateTime, default=datetime.now)
+
+    categoria = relationship("Categoria")
+
 class FrecuenciaRecurrente(str, enum.Enum):
     diaria    = "diaria"
     semanal   = "semanal"

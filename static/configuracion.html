@@ -22,6 +22,15 @@
       <div id="lista-categorias">Cargando...</div>
     </div>
 
+    <!-- Presupuestos por categoría -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Presupuestos por categoría</h2>
+        <button class="btn-sm" onclick="abrirModalPres()">+ Nuevo</button>
+      </div>
+      <div id="lista-presupuestos">Cargando...</div>
+    </div>
+
     <!-- Transacciones recurrentes -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -68,6 +77,26 @@
     </div>
 
   </main>
+
+  <!-- Modal: presupuesto (nuevo / editar) -->
+  <div id="modal-pres" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0" id="modal-pres-titulo">Nuevo presupuesto</h2>
+        <button class="modal-close" onclick="cerrarModalPres()">✕</button>
+      </div>
+      <input type="hidden" id="pres-id">
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="pres-categoria"></select>
+      </div>
+      <div class="form-group">
+        <label>Límite mensual</label>
+        <input type="number" id="pres-limite" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <button class="btn-primary" onclick="guardarPres()">Guardar</button>
+    </div>
+  </div>
 
   <!-- Modal: recurrente (nueva / editar) -->
   <div id="modal-rec" class="modal-overlay">
