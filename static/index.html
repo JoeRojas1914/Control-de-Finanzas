@@ -49,6 +49,11 @@
           <label>Monto del día ($)</label>
           <input type="number" id="rend-monto" step="0.01" placeholder="ej: 9.82">
         </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="rend-fecha" value="">
+          <script>document.getElementById('rend-fecha').value=new Date().toISOString().split('T')[0]</script>
+        </div>
         <button class="btn-primary" onclick="registrarRendimiento()">Registrar</button>
       </div>
 

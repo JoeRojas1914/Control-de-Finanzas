@@ -28,6 +28,7 @@ async function cargarDashboard() {
     `<option value="${c.id}">${c.nombre}</option>`
   ).join('');
 
+
   const tx = data.ultimas_transacciones;
   const tbody = document.getElementById('tabla-tx');
   tbody.innerHTML = tx.length === 0
@@ -46,6 +47,7 @@ async function cargarDashboard() {
 async function registrarRendimiento() {
   const cuenta_id = parseInt(document.getElementById('rend-cuenta').value);
   const monto     = parseFloat(document.getElementById('rend-monto').value);
+  const fechaStr  = document.getElementById('rend-fecha').value;
 
   if (!monto || monto <= 0) {
     toast('Ingresa un monto válido', 'err');
@@ -53,9 +55,11 @@ async function registrarRendimiento() {
   }
 
   try {
-    await post('/api/rendimientos/', { cuenta_id, monto });
+    const fecha = fechaStr ? new Date(fechaStr + 'T12:00:00').toISOString() : undefined;
+    await post('/api/rendimientos/', { cuenta_id, monto, fecha });
     toast('Rendimiento registrado correctamente', 'ok');
     document.getElementById('rend-monto').value = '';
+    document.getElementById('rend-fecha').value = new Date().toISOString().split('T')[0];
     cargarDashboard();
   } catch (e) {
     toast(e.message, 'err');
