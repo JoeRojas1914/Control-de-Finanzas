@@ -281,13 +281,17 @@ function abrirModalEditar() {
   document.getElementById('editar-id').value     = c.id;
   document.getElementById('editar-nombre').value = c.nombre;
 
+  const esCredito   = c.tipo === 'credito';
   const grupoLimite = document.getElementById('editar-grupo-limite');
-  if (c.tipo === 'credito') {
+  if (esCredito) {
     grupoLimite.style.display = 'block';
     document.getElementById('editar-limite').value = c.limite || 0;
   } else {
     grupoLimite.style.display = 'none';
   }
+
+  document.getElementById('editar-saldo-label').textContent = esCredito ? 'Deuda actual ($)' : 'Saldo actual ($)';
+  document.getElementById('editar-saldo').value = esCredito ? Math.abs(c.saldo) : c.saldo;
 
   document.getElementById('modal-editar').classList.add('abierto');
 }
@@ -317,6 +321,11 @@ async function guardarEdicion() {
       if (limite !== c.limite) {
         promesas.push(patch(`/api/cuentas/${id}/limite`, { limite }));
       }
+    }
+    const saldoInput = parseFloat(document.getElementById('editar-saldo').value) || 0;
+    const saldo      = c.tipo === 'credito' ? -Math.abs(saldoInput) : saldoInput;
+    if (saldo !== c.saldo) {
+      promesas.push(patch(`/api/cuentas/${id}/saldo`, { saldo }));
     }
     if (promesas.length === 0) { cerrarModalEditar(); return; }
 
