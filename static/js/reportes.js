@@ -11,11 +11,69 @@ const COLORES = [
 
 async function cargarGraficas() {
   await Promise.all([
+    cargarResumenMes(),
     cargarGastosPorCategoria(),
     cargarIngresosVsGastos(),
     cargarPatrimonioHistorico(),
     cargarRendimientosMes(),
   ]);
+}
+
+async function cargarResumenMes() {
+  const d = await get('/api/reportes/resumen-mes');
+
+  const balance = d.balance;
+  document.getElementById('kpi-ingresos').textContent = fmt(d.ingresos);
+  document.getElementById('kpi-gastos').textContent   = fmt(d.gastos);
+
+  const elBalance = document.getElementById('kpi-balance');
+  elBalance.textContent = fmt(balance);
+  elBalance.className   = 'metric-value ' + (balance >= 0 ? 'green' : 'red');
+
+  document.getElementById('kpi-ahorro').textContent = d.tasa_ahorro + '%';
+
+  // Top 5 gastos
+  const topEl = document.getElementById('top-gastos');
+  if (!d.top_gastos.length) {
+    topEl.innerHTML = '<div class="empty-state">Sin gastos este mes</div>';
+  } else {
+    topEl.innerHTML = d.top_gastos.map((g, i) => `
+      <div class="cuenta-row">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="cuenta-badge" style="width:24px;height:24px;font-size:11px;background:${COLORES[i]}">${i + 1}</div>
+          <div class="cuenta-info">
+            <div class="cuenta-nombre">${g.descripcion}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${g.categoria}</div>
+          </div>
+        </div>
+        <div class="monto-neg" style="font-weight:500">${fmt(g.monto)}</div>
+      </div>`).join('');
+  }
+
+  // Estadísticas extra
+  const variacionHtml = d.variacion_gastos === null
+    ? '<span style="color:var(--text-muted)">Sin datos del mes anterior</span>'
+    : (() => {
+        const v   = d.variacion_gastos;
+        const cls = v > 0 ? 'red' : 'green';
+        const pfx = v > 0 ? '▲' : '▼';
+        return `<span class="${cls}">${pfx} ${Math.abs(v)}% vs mes anterior</span>`;
+      })();
+
+  document.getElementById('stats-extra').innerHTML = `
+    <div class="cuenta-row">
+      <div class="cuenta-info"><div class="cuenta-nombre">Gasto promedio diario</div></div>
+      <div class="monto-neg" style="font-weight:500">${fmt(d.gasto_diario_prom)}</div>
+    </div>
+    <div class="cuenta-row">
+      <div class="cuenta-info"><div class="cuenta-nombre">Variación de gastos</div></div>
+      <div style="font-size:13px;font-weight:500">${variacionHtml}</div>
+    </div>
+    <div class="cuenta-row">
+      <div class="cuenta-info"><div class="cuenta-nombre">Días del mes transcurridos</div></div>
+      <div style="font-size:13px;color:var(--text-muted)">${new Date().getDate()} de ${new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate()}</div>
+    </div>
+  `;
 }
 
 async function cargarGastosPorCategoria() {

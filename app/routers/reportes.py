@@ -98,3 +98,49 @@ def ingresos_vs_gastos(db: Session = Depends(get_db)):
         })
 
     return resultado
+
+@router.get("/resumen-mes")
+def resumen_mes(db: Session = Depends(get_db)):
+    from app.models import Categoria
+    hoy        = datetime.now()
+    inicio_mes = hoy.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    mes_ant  = hoy.month - 1 or 12
+    año_ant  = hoy.year if hoy.month > 1 else hoy.year - 1
+    inicio_ant = datetime(año_ant, mes_ant, 1)
+
+    txs_mes = db.query(Transaccion).filter(Transaccion.fecha >= inicio_mes).all()
+    txs_ant = db.query(Transaccion).filter(
+        Transaccion.fecha >= inicio_ant,
+        Transaccion.fecha <  inicio_mes,
+    ).all()
+
+    ingresos = sum(t.monto       for t in txs_mes if t.monto > 0)
+    gastos   = sum(abs(t.monto)  for t in txs_mes if t.monto < 0)
+    balance  = ingresos - gastos
+    tasa_ahorro = round(balance / ingresos * 100, 1) if ingresos > 0 else 0
+
+    gasto_diario_prom = round(gastos / max(hoy.day, 1), 2)
+
+    gastos_ant = sum(abs(t.monto) for t in txs_ant if t.monto < 0)
+    variacion  = round((gastos - gastos_ant) / gastos_ant * 100, 1) if gastos_ant > 0 else None
+
+    cats = {c.id: c.nombre for c in db.query(Categoria).all()}
+    top_gastos = sorted([t for t in txs_mes if t.monto < 0], key=lambda t: t.monto)[:5]
+
+    return {
+        "ingresos":          round(ingresos, 2),
+        "gastos":            round(gastos, 2),
+        "balance":           round(balance, 2),
+        "tasa_ahorro":       tasa_ahorro,
+        "gasto_diario_prom": gasto_diario_prom,
+        "variacion_gastos":  variacion,
+        "top_gastos": [
+            {
+                "descripcion": t.descripcion,
+                "monto":       round(abs(t.monto), 2),
+                "categoria":   cats.get(t.categoria_id, "Sin categoría"),
+            }
+            for t in top_gastos
+        ],
+    }

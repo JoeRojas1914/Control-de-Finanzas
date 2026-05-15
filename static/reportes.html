@@ -13,6 +13,27 @@
 
   <main class="container">
 
+    <!-- KPIs del mes -->
+    <div class="metrics-grid" id="kpis-mes">
+      <div class="metric-card">
+        <p class="metric-label">Ingresos del mes</p>
+        <p class="metric-value green" id="kpi-ingresos">—</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Gastos del mes</p>
+        <p class="metric-value red" id="kpi-gastos">—</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Balance neto</p>
+        <p class="metric-value" id="kpi-balance">—</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Tasa de ahorro</p>
+        <p class="metric-value" id="kpi-ahorro">—</p>
+      </div>
+    </div>
+
+    <!-- Gráficas fila 1 -->
     <div class="grid-2">
       <div class="card">
         <h2 class="card-title">Gastos por categoría — este mes</h2>
@@ -28,11 +49,28 @@
       </div>
     </div>
 
+    <!-- Ingresos vs Gastos -->
     <div class="card">
       <h2 class="card-title">Ingresos vs gastos — últimos 6 meses</h2>
       <canvas id="grafica-ingresos-gastos" height="120"></canvas>
     </div>
 
+    <!-- Top gastos + estadísticas -->
+    <div class="grid-2">
+
+      <div class="card">
+        <h2 class="card-title">Top 5 mayores gastos — este mes</h2>
+        <div id="top-gastos">Cargando...</div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Estadísticas del mes</h2>
+        <div id="stats-extra">Cargando...</div>
+      </div>
+
+    </div>
+
+    <!-- Patrimonio -->
     <div class="card">
       <h2 class="card-title">Evolución del patrimonio — últimos 30 días</h2>
       <canvas id="grafica-patrimonio" height="120"></canvas>
