@@ -1,33 +1,26 @@
 from app.database import SessionLocal, engine
-from app.models import Cuenta, Categoria, TipoCuenta, Base
+from app.models import Categoria, Base
 
 def seed():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    cuentas = [
-        Cuenta(nombre="Openbank", tipo=TipoCuenta.debito,  saldo=0.0),
-        Cuenta(nombre="Nu",       tipo=TipoCuenta.debito,  saldo=0.0),
-        Cuenta(nombre="Revolut",  tipo=TipoCuenta.debito,  saldo=0.0),
-        Cuenta(nombre="Tarjeta",  tipo=TipoCuenta.credito, saldo=0.0, limite=20000.0),
+    nombres = [
+        "Comida", "Transporte", "Suscripciones", "Salud",
+        "Entretenimiento", "Rendimiento", "Pago TC", "Otros",
     ]
 
-    categorias = [
-        Categoria(nombre="Comida"),
-        Categoria(nombre="Transporte"),
-        Categoria(nombre="Suscripciones"),
-        Categoria(nombre="Salud"),
-        Categoria(nombre="Entretenimiento"),
-        Categoria(nombre="Rendimiento"),
-        Categoria(nombre="Pago TC"),
-        Categoria(nombre="Otros"),
-    ]
+    existentes = {c.nombre for c in db.query(Categoria).all()}
+    nuevas = [Categoria(nombre=n) for n in nombres if n not in existentes]
 
-    db.add_all(cuentas)
-    db.add_all(categorias)
-    db.commit()
+    if nuevas:
+        db.add_all(nuevas)
+        db.commit()
+        print(f"✓ {len(nuevas)} categorías insertadas")
+    else:
+        print("✓ Categorías ya existentes, nada que insertar")
+
     db.close()
-    print("✓ Datos iniciales insertados")
 
 if __name__ == "__main__":
     seed()
