@@ -1,5 +1,5 @@
-const oscuro = document.body.classList.contains('dark');
-const colorTexto = oscuro ? '#888888' : '#888888';
+const oscuro     = document.documentElement.classList.contains('dark');
+const colorTexto = '#888888';
 const colorGrid  = oscuro ? '#2e2e2e' : '#f0f0ee';
 
 Chart.defaults.color = colorTexto;
@@ -10,9 +10,12 @@ const COLORES = [
 ];
 
 async function cargarGraficas() {
-  await cargarGastosPorCategoria();
-  await cargarPatrimonioHistorico();
-  await cargarRendimientosMes();
+  await Promise.all([
+    cargarGastosPorCategoria(),
+    cargarIngresosVsGastos(),
+    cargarPatrimonioHistorico(),
+    cargarRendimientosMes(),
+  ]);
 }
 
 async function cargarGastosPorCategoria() {
@@ -43,6 +46,47 @@ async function cargarGastosPorCategoria() {
             label: ctx => ' ' + fmt(ctx.parsed)
           }
         }
+      }
+    }
+  });
+}
+
+async function cargarIngresosVsGastos() {
+  const datos = await get('/api/reportes/ingresos-vs-gastos');
+
+  new Chart(document.getElementById('grafica-ingresos-gastos'), {
+    type: 'bar',
+    data: {
+      labels: datos.map(d => d.mes),
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: datos.map(d => d.ingresos),
+          backgroundColor: 'rgba(29, 158, 117, 0.75)',
+          borderRadius: 4,
+        },
+        {
+          label: 'Gastos',
+          data: datos.map(d => d.gastos),
+          backgroundColor: 'rgba(216, 90, 48, 0.75)',
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      scales: {
+        y: {
+          ticks: { callback: val => fmt(val), font: { size: 11 } },
+          grid: { color: colorGrid }
+        },
+        x: {
+          ticks: { font: { size: 11 } },
+          grid: { display: false }
+        }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 16 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) } }
       }
     }
   });

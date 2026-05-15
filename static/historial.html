@@ -41,6 +41,18 @@
         <select id="filtro-mes" onchange="cambiarMes()" style="width:auto;padding:6px 12px;font-size:13px"></select>
       </div>
 
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input type="text" id="filtro-busqueda" placeholder="Buscar descripción..."
+               style="flex:1;min-width:160px" oninput="renderizar()">
+        <select id="filtro-categoria" onchange="renderizar()" style="width:auto">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select id="filtro-cuenta" onchange="renderizar()" style="width:auto">
+          <option value="">Todas las cuentas</option>
+        </select>
+      </div>
+
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" onclick="cambiarTab('todos', this)">Todos</button>

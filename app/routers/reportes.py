@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
+from calendar import monthrange
 from app.database import get_db
 from app.models import Transaccion, Cuenta, TipoCuenta
 
@@ -65,3 +66,35 @@ def patrimonio_historico(db: Session = Depends(get_db)):
         saldo -= movimientos_por_dia.get(dia, 0)
 
     return puntos
+
+@router.get("/ingresos-vs-gastos")
+def ingresos_vs_gastos(db: Session = Depends(get_db)):
+    hoy = datetime.now().date()
+    resultado = []
+
+    for i in range(5, -1, -1):
+        año = hoy.year
+        mes = hoy.month - i
+        while mes <= 0:
+            mes += 12
+            año -= 1
+        ultimo_dia = monthrange(año, mes)[1]
+        inicio = datetime(año, mes, 1)
+        fin    = datetime(año, mes, ultimo_dia, 23, 59, 59)
+
+        txs = db.query(Transaccion).filter(
+            Transaccion.fecha >= inicio,
+            Transaccion.fecha <= fin
+        ).all()
+
+        ingresos = sum(t.monto for t in txs if t.monto > 0)
+        gastos   = sum(abs(t.monto) for t in txs if t.monto < 0)
+        label    = datetime(año, mes, 1).strftime("%b %Y")
+
+        resultado.append({
+            "mes":      label,
+            "ingresos": round(ingresos, 2),
+            "gastos":   round(gastos, 2)
+        })
+
+    return resultado

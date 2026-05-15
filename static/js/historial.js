@@ -1,18 +1,39 @@
 let transacciones  = [];
 let rendimientos   = [];
 let cuentasDebito  = [];
+let todasCuentas   = [];
 let tabActual      = 'todos';
 let mesActual      = '';
 
 async function cargarHistorial() {
-  [transacciones, rendimientos, cuentasDebito] = await Promise.all([
+  const cuentas = await get('/api/cuentas/');
+  todasCuentas  = cuentas;
+  cuentasDebito = cuentas.filter(x => x.tipo === 'debito');
+
+  [transacciones, rendimientos] = await Promise.all([
     get('/api/transacciones/?limite=1000'),
     get('/api/rendimientos/?limite=1000'),
-    get('/api/cuentas/').then(c => c.filter(x => x.tipo === 'debito'))
   ]);
 
   poblarMeses();
+  poblarFiltros();
   renderizar();
+}
+
+function poblarFiltros() {
+  const categorias = [...new Map(
+    transacciones
+      .filter(t => t.categoria)
+      .map(t => [t.categoria.id, t.categoria])
+  ).values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  document.getElementById('filtro-categoria').innerHTML =
+    '<option value="">Todas las categorías</option>' +
+    categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  document.getElementById('filtro-cuenta').innerHTML =
+    '<option value="">Todas las cuentas</option>' +
+    todasCuentas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 }
 
 function poblarMeses() {
@@ -56,7 +77,18 @@ function cambiarMes() {
 }
 
 function renderizar() {
-  const txMes   = filtrarMes(transacciones);
+  const busqueda  = document.getElementById('filtro-busqueda')?.value.trim().toLowerCase() || '';
+  const catId     = document.getElementById('filtro-categoria')?.value || '';
+  const cuentaId  = document.getElementById('filtro-cuenta')?.value || '';
+
+  const txFiltradas = filtrarMes(transacciones).filter(t => {
+    if (busqueda && !t.descripcion.toLowerCase().includes(busqueda)) return false;
+    if (catId    && String(t.categoria?.id) !== catId)               return false;
+    if (cuentaId && String(t.cuenta?.id)    !== cuentaId)            return false;
+    return true;
+  });
+
+  const txMes   = txFiltradas;
   const rendMes = filtrarMes(rendimientos);
 
   const ingresos = txMes.filter(t => t.monto > 0);
