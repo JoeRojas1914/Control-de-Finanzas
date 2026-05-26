@@ -13,24 +13,38 @@
 
   <div class="login-wrap">
     <div class="card login-card">
-      <h1 class="login-titulo">FINANZAS</h1>
-      <p class="login-sub">Inicia sesión para continuar</p>
+
+      <h1 class="login-titulo" id="login-titulo">FINANZAS</h1>
+      <p class="login-sub" id="login-sub">Inicia sesión para continuar</p>
 
       <div class="form-group">
         <label>Usuario</label>
-        <input type="text" id="usuario" placeholder="admin" autocomplete="username">
+        <input type="text" id="usuario" placeholder="tu_usuario" autocomplete="username">
       </div>
       <div class="form-group">
         <label>Contraseña</label>
         <input type="password" id="clave" placeholder="••••••••" autocomplete="current-password">
       </div>
+      <div class="form-group" id="grupo-confirmar" style="display:none">
+        <label>Confirmar contraseña</label>
+        <input type="password" id="clave2" placeholder="••••••••" autocomplete="new-password">
+      </div>
 
-      <button class="btn-primary" id="btn-login" onclick="iniciarSesion()">Entrar</button>
+      <button class="btn-primary" id="btn-accion" onclick="accion()">Entrar</button>
       <p class="login-error" id="error-msg"></p>
+
+      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted)">
+        <span id="texto-toggle"></span>
+        <button id="btn-toggle" onclick="toggleModo()"
+          style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;padding:0;margin-left:4px"></button>
+      </p>
+
     </div>
   </div>
 
   <script>
+    let modoRegistro = false;
+
     function actualizarBtn() {
       const oscuro = localStorage.getItem('tema') === 'obscuro';
       document.getElementById('btn-tema').textContent = oscuro ? 'Claro' : 'Obscuro';
@@ -43,8 +57,29 @@
       actualizarBtn();
     }
 
-    actualizarBtn();
+    function toggleModo() {
+      modoRegistro = !modoRegistro;
+      document.getElementById('login-titulo').textContent = modoRegistro ? 'CREAR CUENTA' : 'FINANZAS';
+      document.getElementById('login-sub').textContent    = modoRegistro
+        ? 'Crea tu cuenta para empezar'
+        : 'Inicia sesión para continuar';
+      document.getElementById('grupo-confirmar').style.display = modoRegistro ? '' : 'none';
+      document.getElementById('btn-accion').textContent  = modoRegistro ? 'Crear cuenta' : 'Entrar';
+      document.getElementById('texto-toggle').textContent = modoRegistro ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+      document.getElementById('btn-toggle').textContent   = modoRegistro ? 'Iniciar sesión' : 'Crear una';
+      document.getElementById('error-msg').textContent    = '';
+      document.getElementById('clave2').value = '';
+    }
 
+    function _setTextos() {
+      document.getElementById('texto-toggle').textContent = '¿No tienes cuenta?';
+      document.getElementById('btn-toggle').textContent   = 'Crear una';
+    }
+
+    actualizarBtn();
+    _setTextos();
+
+    // Auto-login si ya hay credenciales guardadas
     const authGuardado = localStorage.getItem('finanzas_auth');
     if (authGuardado) {
       fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
@@ -52,19 +87,23 @@
     }
 
     document.getElementById('clave').addEventListener('keydown', e => {
-      if (e.key === 'Enter') iniciarSesion();
+      if (e.key === 'Enter') accion();
     });
+    document.getElementById('clave2').addEventListener('keydown', e => {
+      if (e.key === 'Enter') accion();
+    });
+
+    async function accion() {
+      modoRegistro ? await registrar() : await iniciarSesion();
+    }
 
     async function iniciarSesion() {
       const usuario  = document.getElementById('usuario').value.trim();
       const clave    = document.getElementById('clave').value;
       const errorMsg = document.getElementById('error-msg');
-      const btn      = document.getElementById('btn-login');
+      const btn      = document.getElementById('btn-accion');
 
-      if (!usuario || !clave) {
-        errorMsg.textContent = 'Ingresa usuario y contraseña';
-        return;
-      }
+      if (!usuario || !clave) { errorMsg.textContent = 'Ingresa usuario y contraseña'; return; }
 
       btn.textContent = 'Verificando...';
       btn.disabled    = true;
@@ -72,9 +111,7 @@
 
       const encoded = btoa(usuario + ':' + clave);
       try {
-        const res = await fetch('/api/cuentas/', {
-          headers: { 'Authorization': 'Basic ' + encoded }
-        });
+        const res = await fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + encoded } });
         if (res.ok) {
           localStorage.setItem('finanzas_auth', encoded);
           window.location.href = '/static/reportes.html';
@@ -85,6 +122,44 @@
         errorMsg.textContent = 'No se pudo conectar con el servidor';
       } finally {
         btn.textContent = 'Entrar';
+        btn.disabled    = false;
+      }
+    }
+
+    async function registrar() {
+      const usuario  = document.getElementById('usuario').value.trim().toLowerCase();
+      const clave    = document.getElementById('clave').value;
+      const clave2   = document.getElementById('clave2').value;
+      const errorMsg = document.getElementById('error-msg');
+      const btn      = document.getElementById('btn-accion');
+
+      if (!usuario || !clave) { errorMsg.textContent = 'Completa todos los campos'; return; }
+      if (clave !== clave2)   { errorMsg.textContent = 'Las contraseñas no coinciden'; return; }
+      if (clave.length < 4)   { errorMsg.textContent = 'La contraseña debe tener al menos 4 caracteres'; return; }
+
+      btn.textContent = 'Creando cuenta...';
+      btn.disabled    = true;
+      errorMsg.textContent = '';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usuario, password: clave }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // Login automático tras registro
+          const encoded = btoa(usuario + ':' + clave);
+          localStorage.setItem('finanzas_auth', encoded);
+          window.location.href = '/static/reportes.html';
+        } else {
+          errorMsg.textContent = data.detail || 'Error al crear la cuenta';
+        }
+      } catch {
+        errorMsg.textContent = 'No se pudo conectar con el servidor';
+      } finally {
+        btn.textContent = 'Crear cuenta';
         btn.disabled    = false;
       }
     }
