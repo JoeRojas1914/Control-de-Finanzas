@@ -64,9 +64,23 @@ async function registrarMovimiento() {
     if (typeof cargarDashboard === 'function') cargarDashboard();
     if (typeof cargarHistorial === 'function') cargarHistorial();
     if (typeof cargarCuentas   === 'function') cargarCuentas(true);
+    if (monto < 0 && !isNaN(categoria_id)) _alertaPresupuesto(categoria_id);
   } catch (e) {
     toast(e.message, 'err');
   }
+}
+
+async function _alertaPresupuesto(categoria_id) {
+  try {
+    const lista = await get('/api/presupuestos/');
+    const p = lista?.find(x => x.categoria_id === categoria_id);
+    if (!p) return;
+    if (p.porcentaje >= 100) {
+      toast(`¡Presupuesto excedido! ${p.categoria}: ${fmt(p.gastado)} / ${fmt(p.monto_limite)}`, 'warn');
+    } else if (p.porcentaje >= 80) {
+      toast(`Llevas el ${p.porcentaje}% del presupuesto de ${p.categoria}`, 'warn');
+    }
+  } catch { /* silencioso — no bloquear el flujo principal */ }
 }
 
 async function registrarTransferencia() {

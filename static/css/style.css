@@ -455,8 +455,9 @@ html.dark .btn-sm { border: 1px solid rgba(255,255,255,0.1); }
 }
 
 .toast-visible { opacity: 1; transform: translateY(0) scale(1); }
-.toast-ok  { background: #059669; color: #fff; }
-.toast-err { background: #dc2626; color: #fff; }
+.toast-ok   { background: #059669; color: #fff; }
+.toast-err  { background: #dc2626; color: #fff; }
+.toast-warn { background: #b45309; color: #fff; }
 
 /* ── Tabs ───────────────────────────────────────────────────── */
 .tabs {
