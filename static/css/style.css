@@ -651,6 +651,16 @@ html.dark .cuenta-card-mini.activa { background: rgba(16,185,129,0.1); }
 
 .empty-state { text-align: center; padding: 32px 0; color: var(--text-hint); font-size: 13px; }
 
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 0 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
 /* ── Modals ─────────────────────────────────────────────────── */
 .modal-overlay {
   display: none;

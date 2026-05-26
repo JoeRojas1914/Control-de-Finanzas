@@ -6,6 +6,37 @@ let todasCuentas    = [];
 let todasCategorias = [];
 let tabActual       = 'todos';
 let mesActual       = '';
+let paginaActual    = 1;
+const POR_PAGINA    = 25;
+
+function _renderPaginacion(total) {
+  const el          = document.getElementById('paginacion');
+  const totalPags   = Math.ceil(total / POR_PAGINA);
+  const inicio      = (paginaActual - 1) * POR_PAGINA + 1;
+  const fin         = Math.min(paginaActual * POR_PAGINA, total);
+
+  if (totalPags <= 1) {
+    el.innerHTML = total > 0
+      ? `<span style="font-size:12px;color:var(--text-muted)">${total} registro${total !== 1 ? 's' : ''}</span>`
+      : '';
+    return;
+  }
+
+  el.innerHTML = `
+    <button class="btn-sm" onclick="irPagina(${paginaActual - 1})"
+      ${paginaActual === 1 ? 'disabled' : ''}>← Anterior</button>
+    <span style="font-size:13px;color:var(--text-muted)">${inicio}–${fin} de ${total}</span>
+    <button class="btn-sm" onclick="irPagina(${paginaActual + 1})"
+      ${paginaActual === totalPags ? 'disabled' : ''}>Siguiente →</button>
+  `;
+}
+
+function irPagina(n) {
+  paginaActual = n;
+  if (tabActual === 'transferencias') renderizarTransferencias(false);
+  else renderizar(false);
+  document.getElementById('tabla-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 async function cargarHistorial() {
   document.getElementById('tabla-historial').innerHTML = _skeletonTabla(8, 7);
@@ -70,7 +101,8 @@ function filtrarMes(items) {
 }
 
 function cambiarTab(tab, btn) {
-  tabActual = tab;
+  tabActual    = tab;
+  paginaActual = 1;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
 
@@ -92,7 +124,9 @@ function cambiarMes() {
   renderizar();
 }
 
-function renderizar() {
+function renderizar(resetear = true) {
+  if (resetear) paginaActual = 1;
+
   const busqueda  = document.getElementById('filtro-busqueda')?.value.trim().toLowerCase() || '';
   const catId     = document.getElementById('filtro-categoria')?.value || '';
   const cuentaId  = document.getElementById('filtro-cuenta')?.value || '';
@@ -137,14 +171,20 @@ function renderizar() {
 
   filas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-  const tbody = document.getElementById('tabla-historial');
+  const total   = filas.length;
+  const inicio  = (paginaActual - 1) * POR_PAGINA;
+  const pagina  = filas.slice(inicio, inicio + POR_PAGINA);
+  const tbody   = document.getElementById('tabla-historial');
 
-  if (filas.length === 0) {
+  if (total === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px">Sin registros para este período</td></tr>';
+    _renderPaginacion(0);
     return;
   }
 
-  tbody.innerHTML = filas.map(f => {
+  _renderPaginacion(total);
+
+  tbody.innerHTML = pagina.map(f => {
     if (f._tipo === 'rendimiento') {
       return `
         <tr>
@@ -183,17 +223,25 @@ function renderizar() {
 
 /* ── Transferencias ── */
 
-function renderizarTransferencias() {
+function renderizarTransferencias(resetear = true) {
+  if (resetear) paginaActual = 1;
+
   const trfMes = mesActual
     ? transferencias.filter(t => t.fecha.startsWith(mesActual))
     : transferencias;
 
-  const tbody = document.getElementById('tabla-transferencias');
-  if (!trfMes.length) {
+  const total  = trfMes.length;
+  const inicio = (paginaActual - 1) * POR_PAGINA;
+  const pagina = trfMes.slice(inicio, inicio + POR_PAGINA);
+  const tbody  = document.getElementById('tabla-transferencias');
+
+  _renderPaginacion(total);
+
+  if (!total) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:24px">Sin transferencias para este período</td></tr>';
     return;
   }
-  tbody.innerHTML = trfMes.map(t => `
+  tbody.innerHTML = pagina.map(t => `
     <tr>
       <td>${t.cuenta_origen}</td>
       <td>${t.cuenta_destino}</td>
