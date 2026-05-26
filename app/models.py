@@ -8,10 +8,16 @@ import enum
 class Usuario(Base):
     __tablename__ = "usuarios"
 
-    id            = Column(Integer, primary_key=True, index=True)
-    username      = Column(String, unique=True, nullable=False, index=True)
-    password_hash = Column(String, nullable=False)
-    creado_en     = Column(DateTime, default=datetime.now)
+    id               = Column(Integer, primary_key=True, index=True)
+    username         = Column(String, unique=True, nullable=False, index=True)
+    password_hash    = Column(String, nullable=False)
+    nombre           = Column(String, nullable=True)
+    apellido         = Column(String, nullable=True)
+    correo           = Column(String, nullable=True)
+    fecha_nacimiento = Column(DateTime, nullable=True)
+    moneda           = Column(String, default="MXN")
+    avatar_color     = Column(String, default="#6366f1")
+    creado_en        = Column(DateTime, default=datetime.now)
 
 
 class TipoCuenta(str, enum.Enum):
