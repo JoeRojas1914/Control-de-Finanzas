@@ -3,6 +3,7 @@ let cuentasConf  = [];
 let categoriasConf = [];
 
 async function cargarCategorias() {
+  document.getElementById('lista-categorias').innerHTML = _skeletonLista(4);
   categorias = await get('/api/categorias/');
   const contenedor = document.getElementById('lista-categorias');
   if (!categorias.length) {
@@ -172,6 +173,7 @@ async function exportarRendimientos() {
 // ── Presupuestos ──────────────────────────────────────────────
 
 async function cargarPresupuestos() {
+  document.getElementById('lista-presupuestos').innerHTML = _skeletonLista(2);
   const lista = await get('/api/presupuestos/');
   const el    = document.getElementById('lista-presupuestos');
   if (!lista.length) {
@@ -266,6 +268,7 @@ const FRECUENCIA_LABEL = {
 };
 
 async function cargarRecurrentes() {
+  document.getElementById('lista-recurrentes').innerHTML = _skeletonLista(3);
   const lista = await get('/api/recurrentes/');
   const contenedor = document.getElementById('lista-recurrentes');
   if (!lista || !lista.length) {
@@ -396,6 +399,7 @@ const _DIAS_LABEL = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 const _DIAS_KEY   = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
 
 async function cargarRendimientosProgramados() {
+  document.getElementById('lista-rendp').innerHTML = _skeletonLista(2);
   const [fijos, horarios] = await Promise.all([
     get('/api/rendimientos-programados/'),
     get('/api/rendimientos-programados/horarios/'),
@@ -646,6 +650,7 @@ function _setIconoActivo(key) {
 }
 
 async function cargarMetas() {
+  document.getElementById('lista-metas').innerHTML = _skeletonLista(2);
   const metas = await get('/api/metas/');
   const el    = document.getElementById('lista-metas');
   if (!metas.length) {

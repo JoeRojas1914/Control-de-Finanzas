@@ -68,3 +68,28 @@ function fmtFecha(iso) {
     day: '2-digit', month: 'short', year: 'numeric'
   });
 }
+
+function _skeletonLista(n = 3) {
+  return Array.from({length: n}, () => `
+    <div class="cuenta-row" style="pointer-events:none">
+      <div class="skeleton" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+        <div class="skeleton" style="height:13px;width:42%"></div>
+        <div class="skeleton" style="height:11px;width:64%"></div>
+      </div>
+      <div class="skeleton" style="height:26px;width:54px;flex-shrink:0;border-radius:7px"></div>
+    </div>`).join('');
+}
+
+function _skeletonTabla(filas = 4, cols = 5) {
+  return Array.from({length: filas}, () =>
+    `<tr>${Array.from({length: cols}, (_, i) =>
+      `<td><div class="skeleton" style="height:13px;width:${i === 0 ? '72%' : i === cols - 1 ? '45%' : '58%'};border-radius:4px"></div></td>`
+    ).join('')}</tr>`
+  ).join('');
+}
+
+function _skeletonKpi(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = '<div class="skeleton" style="height:22px;width:58%;margin:4px auto 0;border-radius:5px"></div>';
+}

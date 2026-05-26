@@ -429,6 +429,19 @@ html.dark .btn-sm { border: 1px solid rgba(255,255,255,0.1); }
 .btn-danger { background: #dc2626; color: #fff; border: none; }
 .btn-danger:hover { background: #b91c1c; opacity: 1; }
 
+/* ── Skeletons ───────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.skeleton {
+  display: block;
+  background: var(--border);
+  border-radius: 5px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
 /* ── Toasts ─────────────────────────────────────────────────── */
 #toast-contenedor {
   position: fixed;

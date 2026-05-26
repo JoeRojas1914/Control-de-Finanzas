@@ -8,6 +8,7 @@ let tabActual       = 'todos';
 let mesActual       = '';
 
 async function cargarHistorial() {
+  document.getElementById('tabla-historial').innerHTML = _skeletonTabla(8, 7);
   const cuentas = await get('/api/cuentas/');
   todasCuentas    = cuentas;
   cuentasDebito   = cuentas.filter(x => x.tipo === 'debito');

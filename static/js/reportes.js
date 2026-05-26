@@ -10,6 +10,10 @@ const COLORES = [
 ];
 
 async function cargarDatosDashboard() {
+  ['kpi-patrimonio','kpi-deuda'].forEach(_skeletonKpi);
+  document.getElementById('lista-cuentas-dash').innerHTML = _skeletonLista(2);
+  document.getElementById('tabla-tx-dash').innerHTML      = _skeletonTabla(5, 5);
+
   const resultado = await post('/api/recurrentes/aplicar', {});
   if (resultado?.aplicadas > 0)
     toast(`${resultado.aplicadas} transacción(es) recurrente(s) aplicada(s)`, 'ok');
@@ -111,6 +115,8 @@ async function cargarMetasDash() {
 }
 
 async function cargarPresupuestosReporte() {
+  document.getElementById('lista-pres-reportes').innerHTML = _skeletonLista(2);
+
   const lista = await get('/api/presupuestos/');
   const card  = document.getElementById('card-presupuestos');
   if (!lista.length) { card.style.display = 'none'; return; }
@@ -137,6 +143,10 @@ async function cargarPresupuestosReporte() {
 }
 
 async function cargarResumenMes() {
+  ['kpi-ingresos','kpi-gastos','kpi-balance','kpi-ahorro'].forEach(_skeletonKpi);
+  document.getElementById('top-gastos').innerHTML  = _skeletonLista(3);
+  document.getElementById('stats-extra').innerHTML = _skeletonLista(3);
+
   const d = await get('/api/reportes/resumen-mes');
 
   const balance = d.balance;
@@ -312,6 +322,12 @@ async function cargarPatrimonioHistorico() {
 }
 
 async function cargarRendimientosMes() {
+  document.getElementById('tabla-rendimientos').innerHTML = `
+    <table class="tabla">
+      <thead><tr><th>Cuenta</th><th>Hoy</th><th>Este mes</th><th>Este año</th></tr></thead>
+      <tbody>${_skeletonTabla(3, 4)}</tbody>
+    </table>`;
+
   const cuentas    = await get('/api/cuentas/');
   const debito     = cuentas.filter(c => c.tipo === 'debito');
   const contenedor = document.getElementById('tabla-rendimientos');
