@@ -1,29 +1,36 @@
-import os
 import base64
-import secrets
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+from app.database import get_db
+from app.models import Usuario
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verificar_credenciales(request: Request):
-    if not request.url.path.startswith("/api/"):
-        return  # Solo proteger endpoints de API
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
-    auth_pass = os.getenv("AUTH_PASS", "")
-    if not auth_pass:
-        return  # Auth deshabilitada en desarrollo local
 
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> Usuario:
     header = request.headers.get("Authorization", "")
     if not header.startswith("Basic "):
-        raise HTTPException(status_code=401, detail="No autorizado")
-
+        raise HTTPException(
+            status_code=401,
+            detail="No autorizado",
+            headers={"WWW-Authenticate": "Basic"},
+        )
     try:
-        usuario, clave = base64.b64decode(header[6:]).decode().split(":", 1)
+        username, password = base64.b64decode(header[6:]).decode().split(":", 1)
     except Exception:
-        raise HTTPException(status_code=401, detail="No autorizado")
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    auth_user = os.getenv("AUTH_USER", "admin")
-    usuario_ok = secrets.compare_digest(usuario.encode(), auth_user.encode())
-    clave_ok   = secrets.compare_digest(clave.encode(),   auth_pass.encode())
-
-    if not (usuario_ok and clave_ok):
+    user = db.query(Usuario).filter(Usuario.username == username).first()
+    if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    return user
