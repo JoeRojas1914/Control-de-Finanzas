@@ -1,0 +1,111 @@
+/* ── Cuentas master-detail ──────────────────────────────────── */
+.cuentas-layout {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.cuentas-panel-izq {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: sticky;
+  top: 16px;
+}
+
+html.dark .cuentas-panel-izq {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.cuentas-panel-izq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cuenta-card-mini {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+
+.cuenta-card-mini:last-child { border-bottom: none; }
+.cuenta-card-mini:hover { background: var(--bg-hover); }
+
+.cuenta-card-mini.activa {
+  background: rgba(16,185,129,0.07);
+  border-left-color: #10b981;
+}
+
+html.dark .cuenta-card-mini.activa { background: rgba(16,185,129,0.1); }
+
+.cuenta-badge-mini {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cuenta-mini-info { flex: 1; min-width: 0; }
+
+.cuenta-mini-nombre {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cuenta-mini-tipo  { font-size: 11px; color: var(--text-muted); }
+
+.cuenta-mini-saldo { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+
+.cuentas-panel-der { min-width: 0; }
+
+.detalle-placeholder {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.detalle-badge {
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.detalle-titulo { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; letter-spacing: -0.01em; }
+.detalle-subtitulo { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.detalle-acciones { display: flex; gap: 8px; margin-left: auto; }
+
+.rend-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+
+.rend-row:last-child { border-bottom: none; }
+.rend-fecha { color: var(--text-muted); font-size: 12px; flex-shrink: 0; width: 100px; }
+.rend-monto { font-weight: 600; color: #059669; flex: 1; }
+.rend-btns  { display: flex; gap: 6px; flex-shrink: 0; }

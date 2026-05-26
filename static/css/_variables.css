@@ -1,0 +1,31 @@
+/* ── Variables ──────────────────────────────────────────────── */
+:root {
+  --bg:         #f0f2f5;
+  --bg-card:    #ffffff;
+  --bg-hover:   #f5f6f8;
+  --border:     #e4e6ea;
+  --text:       #111111;
+  --text-muted: #6b7280;
+  --text-hint:  #9ca3af;
+  --btn-bg:     #111111;
+  --btn-text:   #ffffff;
+  --accent:     #c0392b;
+  --shadow:     0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-md:  0 4px 14px rgba(0,0,0,0.09), 0 12px 40px rgba(0,0,0,0.07);
+  --sidebar-w:  220px;
+}
+
+html.dark {
+  --bg:         #0b0d12;
+  --bg-card:    rgba(255,255,255,0.045);
+  --bg-hover:   rgba(255,255,255,0.07);
+  --border:     rgba(255,255,255,0.09);
+  --text:       #f1f2f4;
+  --text-muted: #6b7280;
+  --text-hint:  #4b5563;
+  --btn-bg:     #1f2937;
+  --btn-text:   #f1f2f4;
+  --accent:     #c0392b;
+  --shadow:     0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.5), 0 16px 48px rgba(0,0,0,0.4);
+}

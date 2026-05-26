@@ -1,0 +1,43 @@
+/* ── Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  body { padding-left: 0; padding-bottom: 72px; }
+
+  .navbar {
+    width: 100%; height: auto;
+    position: fixed;
+    bottom: 0; left: 0; top: auto;
+    flex-direction: row;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255,255,255,0.08);
+    gap: 0; overflow: visible;
+  }
+
+  .nav-logo    { display: none; }
+  .nav-footer  { display: none; }
+
+  .nav-links {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%; gap: 0;
+  }
+
+  .nav-link {
+    flex-direction: column; gap: 3px;
+    padding: 6px 8px; font-size: 10px;
+    border-radius: 8px; flex: 1; justify-content: center;
+  }
+
+  .nav-link svg { width: 20px; height: 20px; }
+
+  .grid-2 { grid-template-columns: 1fr; }
+  .cuentas-layout { grid-template-columns: 1fr; }
+  .cuentas-panel-izq { position: static; }
+  .detalle-acciones { margin-left: 0; }
+  .fab { bottom: 86px; right: 16px; }
+}
+
+@media (min-width: 769px) and (max-width: 960px) {
+  :root { --sidebar-w: 180px; }
+  .container { padding: 28px 20px; }
+  .cuentas-layout { grid-template-columns: 230px 1fr; }
+}

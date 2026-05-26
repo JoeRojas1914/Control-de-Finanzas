@@ -1,0 +1,221 @@
+/* ── Cuenta rows ────────────────────────────────────────────── */
+.cuenta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cuenta-row:last-child { border-bottom: none; }
+
+.cuenta-badge {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: rgba(16,185,129,0.12); color: #059669;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
+.cuenta-info { flex: 1; }
+.cuenta-nombre { font-size: 13px; font-weight: 600; color: var(--text); }
+.cuenta-tipo   { font-size: 11px; color: var(--text-hint); font-weight: 500; }
+.cuenta-saldo  { font-size: 15px; font-weight: 700; text-align: right; color: var(--text); letter-spacing: -0.01em; }
+.cuenta-rend   { font-size: 11px; color: #059669; text-align: right; font-weight: 500; }
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+html.dark input, html.dark select {
+  background: #1a1d24;
+}
+
+html.dark select option {
+  background: #1a1d24;
+  color: #f1f2f4;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: rgba(96,165,250,0.65);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary:hover  { opacity: 0.85; }
+.btn-primary:active { transform: scale(0.98); }
+
+html.dark .btn-primary { border: 1px solid rgba(255,255,255,0.08); }
+
+.msg { font-size: 13px; margin-top: 10px; min-height: 20px; }
+.msg.ok  { color: #059669; }
+.msg.err { color: #dc2626; }
+
+.saldo-input { width: 120px; padding: 5px 8px; font-size: 13px; }
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn-sm:hover  { opacity: 0.85; }
+.btn-sm:active { transform: scale(0.97); }
+
+html.dark .btn-sm { border: 1px solid rgba(255,255,255,0.1); }
+
+.btn-danger { background: #dc2626; color: #fff; border: none; }
+.btn-danger:hover { background: #b91c1c; opacity: 1; }
+
+/* ── Table ──────────────────────────────────────────────────── */
+.tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabla th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 8px 12px;
+}
+.tabla td { padding: 11px 8px; border-top: 1px solid var(--border); color: var(--text); }
+.tabla tr:hover td { background: var(--bg-hover); }
+.tabla .monto-neg { color: #dc2626; font-weight: 700; }
+.tabla .monto-pos { color: #059669; font-weight: 700; }
+
+/* ── Progress ───────────────────────────────────────────────── */
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #10b981;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-fill.warn { background: #f59e0b; }
+.progress-fill.over { background: #ef4444; }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.cat-badge {
+  font-size: 11px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Type badges ────────────────────────────────────────────── */
+.tipo-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.tipo-rend    { background: rgba(26,110,220,0.1); color: #1a6edc; }
+.tipo-ingreso { background: rgba(5,150,105,0.1);  color: #059669; }
+.tipo-gasto   { background: rgba(220,38,38,0.1);  color: #dc2626; }
+
+/* ── FAB ────────────────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.28);
+  z-index: 90;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+html.dark .fab { background: #1f2937; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+.fab:hover  { transform: scale(1.07) translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+.fab:active { transform: scale(0.95); }
