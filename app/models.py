@@ -4,22 +4,35 @@ from datetime import datetime
 from app.database import Base
 import enum
 
+
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    username      = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    creado_en     = Column(DateTime, default=datetime.now)
+
+
 class TipoCuenta(str, enum.Enum):
     debito  = "debito"
     credito = "credito"
 
+
 class Cuenta(Base):
     __tablename__ = "cuentas"
 
-    id        = Column(Integer, primary_key=True, index=True)
-    nombre    = Column(String, nullable=False)
-    tipo      = Column(Enum(TipoCuenta), nullable=False)
-    saldo     = Column(Float, default=0.0)
-    limite    = Column(Float, nullable=True)
-    creada_en = Column(DateTime, default=datetime.now)
+    id          = Column(Integer, primary_key=True, index=True)
+    nombre      = Column(String, nullable=False)
+    tipo        = Column(Enum(TipoCuenta), nullable=False)
+    saldo       = Column(Float, default=0.0)
+    limite      = Column(Float, nullable=True)
+    creada_en   = Column(DateTime, default=datetime.now)
+    usuario_id  = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     rendimientos  = relationship("RendimientoDiario", back_populates="cuenta")
     transacciones = relationship("Transaccion",       back_populates="cuenta")
+
 
 class RendimientoDiario(Base):
     __tablename__ = "rendimientos_diarios"
@@ -31,13 +44,16 @@ class RendimientoDiario(Base):
 
     cuenta = relationship("Cuenta", back_populates="rendimientos")
 
+
 class Categoria(Base):
     __tablename__ = "categorias"
 
-    id     = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String, unique=True, nullable=False)
+    id         = Column(Integer, primary_key=True, index=True)
+    nombre     = Column(String, nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     transacciones = relationship("Transaccion", back_populates="categoria")
+
 
 class Transaccion(Base):
     __tablename__ = "transacciones"
@@ -52,6 +68,7 @@ class Transaccion(Base):
     cuenta    = relationship("Cuenta",    back_populates="transacciones")
     categoria = relationship("Categoria", back_populates="transacciones")
 
+
 class Transferencia(Base):
     __tablename__ = "transferencias"
 
@@ -65,15 +82,18 @@ class Transferencia(Base):
     cuenta_origen  = relationship("Cuenta", foreign_keys=[cuenta_origen_id])
     cuenta_destino = relationship("Cuenta", foreign_keys=[cuenta_destino_id])
 
+
 class Presupuesto(Base):
     __tablename__ = "presupuestos"
 
     id           = Column(Integer, primary_key=True, index=True)
-    categoria_id = Column(Integer, ForeignKey("categorias.id"), unique=True)
+    categoria_id = Column(Integer, ForeignKey("categorias.id"))
     monto_limite = Column(Float, nullable=False)
     creado_en    = Column(DateTime, default=datetime.now)
+    usuario_id   = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     categoria = relationship("Categoria")
+
 
 class FrecuenciaRecurrente(str, enum.Enum):
     diaria    = "diaria"
@@ -81,6 +101,7 @@ class FrecuenciaRecurrente(str, enum.Enum):
     quincenal = "quincenal"
     mensual   = "mensual"
     anual     = "anual"
+
 
 class TransaccionRecurrente(Base):
     __tablename__ = "transacciones_recurrentes"
@@ -94,9 +115,11 @@ class TransaccionRecurrente(Base):
     creada_en     = Column(DateTime, default=datetime.now)
     cuenta_id     = Column(Integer, ForeignKey("cuentas.id"))
     categoria_id  = Column(Integer, ForeignKey("categorias.id"), nullable=True)
+    usuario_id    = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     cuenta    = relationship("Cuenta")
     categoria = relationship("Categoria")
+
 
 class HorarioRendimiento(Base):
     __tablename__ = "horarios_rendimiento"
@@ -113,8 +136,10 @@ class HorarioRendimiento(Base):
     ultima_aplicacion = Column(DateTime, nullable=True)
     activo            = Column(Boolean, default=True)
     creado_en         = Column(DateTime, default=datetime.now)
+    usuario_id        = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     cuenta = relationship("Cuenta")
+
 
 class RendimientoProgramado(Base):
     __tablename__ = "rendimientos_programados"
@@ -126,8 +151,10 @@ class RendimientoProgramado(Base):
     proxima_fecha = Column(DateTime, nullable=False)
     activo        = Column(Boolean, default=True)
     creado_en     = Column(DateTime, default=datetime.now)
+    usuario_id    = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 
     cuenta = relationship("Cuenta")
+
 
 class Meta(Base):
     __tablename__ = "metas"
@@ -139,3 +166,4 @@ class Meta(Base):
     monto_actual   = Column(Float, default=0.0)
     fecha_objetivo = Column(DateTime, nullable=True)
     creada_en      = Column(DateTime, default=datetime.now)
+    usuario_id     = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
