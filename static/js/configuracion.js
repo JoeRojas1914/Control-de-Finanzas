@@ -390,8 +390,238 @@ async function toggleRec(id, activa) {
   }
 }
 
+// ── Rendimientos programados ──────────────────────────────────
+
+const _DIAS_LABEL = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+const _DIAS_KEY   = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+
+async function cargarRendimientosProgramados() {
+  const [fijos, horarios] = await Promise.all([
+    get('/api/rendimientos-programados/'),
+    get('/api/rendimientos-programados/horarios/'),
+  ]);
+  const el = document.getElementById('lista-rendp');
+
+  const htmlFijos = (fijos || []).map(r => `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">${r.cuenta.nombre}
+          <span style="font-size:11px;background:rgba(59,130,246,0.12);color:#3b82f6;padding:2px 7px;border-radius:5px;margin-left:6px">Fijo</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${fmt(r.monto)} · ${FRECUENCIA_LABEL[r.frecuencia]} · próxima: ${fmtFecha(r.proxima_fecha)}
+          ${r.activo ? '' : '· <span style="color:#f59e0b">Pausado</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleRendP(${r.id}, ${r.activo})">${r.activo ? 'Pausar' : 'Activar'}</button>
+        <button class="btn-sm" onclick="abrirModalRendP(${r.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarRendP(${r.id})">Eliminar</button>
+      </div>
+    </div>`);
+
+  const htmlHorarios = (horarios || []).map(h => {
+    const resumen = _DIAS_LABEL
+      .map((d, i) => h[_DIAS_KEY[i]] ? `${d}: ${fmt(h[_DIAS_KEY[i]])}` : null)
+      .filter(Boolean).join(' · ');
+    return `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">${h.cuenta.nombre}
+          <span style="font-size:11px;background:rgba(139,92,246,0.12);color:#8b5cf6;padding:2px 7px;border-radius:5px;margin-left:6px">Personalizado</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${resumen || 'Sin montos configurados'}
+          ${h.activo ? '' : '· <span style="color:#f59e0b">Pausado</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleHorario(${h.id}, ${h.activo})">${h.activo ? 'Pausar' : 'Activar'}</button>
+        <button class="btn-sm" onclick="abrirModalHorario(${h.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarHorario(${h.id})">Eliminar</button>
+      </div>
+    </div>`;
+  });
+
+  const todo = [...htmlFijos, ...htmlHorarios];
+  el.innerHTML = todo.length
+    ? todo.join('')
+    : '<div class="empty-state">Sin rendimientos programados</div>';
+}
+
+async function abrirModalRendP(id) {
+  const cuentas = await get('/api/cuentas/');
+  document.getElementById('rendp-cuenta').innerHTML = cuentas
+    .filter(c => c.tipo === 'debito')
+    .map(c => `<option value="${c.id}">${c.nombre}</option>`)
+    .join('');
+
+  if (id) {
+    const lista = await get('/api/rendimientos-programados/');
+    const r     = lista.find(x => x.id === id);
+    document.getElementById('modal-rendp-titulo').textContent  = 'Editar rendimiento automático';
+    document.getElementById('rendp-id').value                  = r.id;
+    document.getElementById('rendp-cuenta').value              = r.cuenta_id;
+    document.getElementById('rendp-monto').value               = r.monto;
+    document.getElementById('rendp-frecuencia').value          = r.frecuencia;
+    document.getElementById('rendp-proxima-fecha').value       = r.proxima_fecha.split('T')[0];
+  } else {
+    document.getElementById('modal-rendp-titulo').textContent  = 'Nuevo rendimiento automático';
+    document.getElementById('rendp-id').value                  = '';
+    document.getElementById('rendp-monto').value               = '';
+    document.getElementById('rendp-frecuencia').value          = 'diaria';
+    document.getElementById('rendp-proxima-fecha').value       = new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('modal-rendp').classList.add('abierto');
+}
+
+function cerrarModalRendP() {
+  document.getElementById('modal-rendp').classList.remove('abierto');
+}
+
+document.getElementById('modal-rendp').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalRendP();
+});
+
+async function guardarRendP() {
+  const id           = document.getElementById('rendp-id').value;
+  const cuenta_id    = parseInt(document.getElementById('rendp-cuenta').value);
+  const monto        = parseFloat(document.getElementById('rendp-monto').value);
+  const frecuencia   = document.getElementById('rendp-frecuencia').value;
+  const fechaStr     = document.getElementById('rendp-proxima-fecha').value;
+
+  if (isNaN(cuenta_id)) { toast('Selecciona una cuenta', 'err'); return; }
+  if (!monto || monto <= 0) { toast('El monto debe ser mayor a cero', 'err'); return; }
+  if (!fechaStr) { toast('La fecha es obligatoria', 'err'); return; }
+
+  const proxima_fecha = new Date(fechaStr + 'T12:00:00').toISOString();
+  const cuerpo = { cuenta_id, monto, frecuencia, proxima_fecha };
+
+  try {
+    if (id) {
+      await patch(`/api/rendimientos-programados/${id}`, cuerpo);
+      toast('Rendimiento actualizado', 'ok');
+    } else {
+      await post('/api/rendimientos-programados/', cuerpo);
+      toast('Rendimiento programado creado', 'ok');
+    }
+    cerrarModalRendP();
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarRendP(id) {
+  if (!confirm('¿Eliminar este rendimiento programado?\nLos rendimientos ya registrados permanecerán.')) return;
+  try {
+    await del(`/api/rendimientos-programados/${id}`);
+    toast('Rendimiento programado eliminado', 'ok');
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleRendP(id, activo) {
+  try {
+    await patch(`/api/rendimientos-programados/${id}/toggle`, {});
+    toast(activo ? 'Pausado' : 'Activado', 'ok');
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// ── Horario semanal ───────────────────────────────────────────
+
+async function abrirModalHorario(id) {
+  const cuentas = await get('/api/cuentas/');
+  document.getElementById('horario-cuenta').innerHTML = cuentas
+    .filter(c => c.tipo === 'debito')
+    .map(c => `<option value="${c.id}">${c.nombre}</option>`)
+    .join('');
+
+  _DIAS_KEY.forEach(d => { document.getElementById(`horario-${d}`).value = ''; });
+
+  if (id) {
+    const lista = await get('/api/rendimientos-programados/horarios/');
+    const h     = lista.find(x => x.id === id);
+    document.getElementById('modal-horario-titulo').textContent = 'Editar horario personalizado';
+    document.getElementById('horario-id').value                 = h.id;
+    document.getElementById('horario-cuenta').value             = h.cuenta_id;
+    _DIAS_KEY.forEach(d => {
+      document.getElementById(`horario-${d}`).value = h[d] || '';
+    });
+  } else {
+    document.getElementById('modal-horario-titulo').textContent = 'Horario personalizado';
+    document.getElementById('horario-id').value                 = '';
+  }
+  document.getElementById('modal-horario').classList.add('abierto');
+}
+
+function cerrarModalHorario() {
+  document.getElementById('modal-horario').classList.remove('abierto');
+}
+
+document.getElementById('modal-horario').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalHorario();
+});
+
+async function guardarHorario() {
+  const id        = document.getElementById('horario-id').value;
+  const cuenta_id = parseInt(document.getElementById('horario-cuenta').value);
+
+  if (isNaN(cuenta_id)) { toast('Selecciona una cuenta', 'err'); return; }
+
+  const cuerpo = { cuenta_id };
+  _DIAS_KEY.forEach(d => {
+    const v = parseFloat(document.getElementById(`horario-${d}`).value);
+    cuerpo[d] = isNaN(v) || v <= 0 ? null : v;
+  });
+
+  const tieneAlgo = _DIAS_KEY.some(d => cuerpo[d]);
+  if (!tieneAlgo) { toast('Ingresa al menos un monto', 'err'); return; }
+
+  try {
+    if (id) {
+      await patch(`/api/rendimientos-programados/horarios/${id}`, cuerpo);
+      toast('Horario actualizado', 'ok');
+    } else {
+      await post('/api/rendimientos-programados/horarios/', cuerpo);
+      toast('Horario creado', 'ok');
+    }
+    cerrarModalHorario();
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarHorario(id) {
+  if (!confirm('¿Eliminar este horario personalizado?\nLos rendimientos ya registrados permanecerán.')) return;
+  try {
+    await del(`/api/rendimientos-programados/horarios/${id}`);
+    toast('Horario eliminado', 'ok');
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleHorario(id, activo) {
+  try {
+    await patch(`/api/rendimientos-programados/horarios/${id}/toggle`, {});
+    toast(activo ? 'Pausado' : 'Activado', 'ok');
+    cargarRendimientosProgramados();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 cargarCategorias();
 cargarPresupuestos();
 cargarRecurrentes();
+cargarRendimientosProgramados();
 sincronizarBtnTema();

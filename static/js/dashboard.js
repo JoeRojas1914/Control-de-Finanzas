@@ -5,6 +5,10 @@ async function cargarDashboard() {
   if (resultado?.aplicadas > 0)
     toast(`${resultado.aplicadas} transacción(es) recurrente(s) aplicada(s)`, 'ok');
 
+  const resultadoRend = await post('/api/rendimientos-programados/aplicar', {});
+  if (resultadoRend?.aplicados > 0)
+    toast(`${resultadoRend.aplicados} rendimiento(s) aplicado(s) automáticamente`, 'ok');
+
   const data = await get('/api/dashboard/');
 
   document.getElementById('patrimonio').textContent   = fmt(data.patrimonio);

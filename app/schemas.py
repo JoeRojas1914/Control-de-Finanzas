@@ -83,3 +83,18 @@ class RecurrenteOut(RecurrenteCreate):
 
     class Config:
         from_attributes = True
+
+class RendProgramadoCreate(BaseModel):
+    cuenta_id     : int
+    monto         : float
+    frecuencia    : str
+    proxima_fecha : datetime
+
+class RendProgramadoOut(RendProgramadoCreate):
+    id        : int
+    activo    : bool
+    creado_en : datetime
+    cuenta    : CuentaOut
+
+    class Config:
+        from_attributes = True

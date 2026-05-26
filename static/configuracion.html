@@ -31,6 +31,18 @@
       <div id="lista-presupuestos">Cargando...</div>
     </div>
 
+    <!-- Rendimientos programados -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Rendimientos automáticos</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" onclick="abrirModalRendP()">+ Fijo</button>
+          <button class="btn-sm" onclick="abrirModalHorario()">+ Personalizado</button>
+        </div>
+      </div>
+      <div id="lista-rendp">Cargando...</div>
+    </div>
+
     <!-- Transacciones recurrentes -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -77,6 +89,89 @@
     </div>
 
   </main>
+
+  <!-- Modal: rendimiento programado (nuevo / editar) -->
+  <div id="modal-rendp" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0" id="modal-rendp-titulo">Nuevo rendimiento automático</h2>
+        <button class="modal-close" onclick="cerrarModalRendP()">✕</button>
+      </div>
+      <input type="hidden" id="rendp-id">
+      <div class="form-group">
+        <label>Cuenta</label>
+        <select id="rendp-cuenta"></select>
+      </div>
+      <div class="form-group">
+        <label>Monto por período</label>
+        <input type="number" id="rendp-monto" placeholder="ej: 9.82" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Frecuencia</label>
+        <select id="rendp-frecuencia">
+          <option value="diaria" selected>Diaria</option>
+          <option value="semanal">Semanal</option>
+          <option value="quincenal">Quincenal</option>
+          <option value="mensual">Mensual</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Próxima fecha de aplicación</label>
+        <input type="date" id="rendp-proxima-fecha">
+      </div>
+      <button class="btn-primary" onclick="guardarRendP()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Modal: horario semanal de rendimientos -->
+  <div id="modal-horario" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0" id="modal-horario-titulo">Horario personalizado</h2>
+        <button class="modal-close" onclick="cerrarModalHorario()">✕</button>
+      </div>
+      <input type="hidden" id="horario-id">
+      <div class="form-group">
+        <label>Cuenta</label>
+        <select id="horario-cuenta"></select>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        Deja vacío los días que no recibes rendimiento
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin:0">
+          <label>Lunes</label>
+          <input type="number" id="horario-lunes" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Martes</label>
+          <input type="number" id="horario-martes" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Miércoles</label>
+          <input type="number" id="horario-miercoles" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Jueves</label>
+          <input type="number" id="horario-jueves" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Viernes</label>
+          <input type="number" id="horario-viernes" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Sábado</label>
+          <input type="number" id="horario-sabado" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Domingo</label>
+          <input type="number" id="horario-domingo" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:18px" onclick="guardarHorario()">Guardar</button>
+    </div>
+  </div>
 
   <!-- Modal: presupuesto (nuevo / editar) -->
   <div id="modal-pres" class="modal-overlay">

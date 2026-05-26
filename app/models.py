@@ -97,3 +97,34 @@ class TransaccionRecurrente(Base):
 
     cuenta    = relationship("Cuenta")
     categoria = relationship("Categoria")
+
+class HorarioRendimiento(Base):
+    __tablename__ = "horarios_rendimiento"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    cuenta_id         = Column(Integer, ForeignKey("cuentas.id"), nullable=False)
+    lunes             = Column(Float, nullable=True)
+    martes            = Column(Float, nullable=True)
+    miercoles         = Column(Float, nullable=True)
+    jueves            = Column(Float, nullable=True)
+    viernes           = Column(Float, nullable=True)
+    sabado            = Column(Float, nullable=True)
+    domingo           = Column(Float, nullable=True)
+    ultima_aplicacion = Column(DateTime, nullable=True)
+    activo            = Column(Boolean, default=True)
+    creado_en         = Column(DateTime, default=datetime.now)
+
+    cuenta = relationship("Cuenta")
+
+class RendimientoProgramado(Base):
+    __tablename__ = "rendimientos_programados"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    cuenta_id     = Column(Integer, ForeignKey("cuentas.id"), nullable=False)
+    monto         = Column(Float, nullable=False)
+    frecuencia    = Column(Enum(FrecuenciaRecurrente), nullable=False)
+    proxima_fecha = Column(DateTime, nullable=False)
+    activo        = Column(Boolean, default=True)
+    creado_en     = Column(DateTime, default=datetime.now)
+
+    cuenta = relationship("Cuenta")
