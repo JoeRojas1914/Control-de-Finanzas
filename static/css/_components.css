@@ -180,6 +180,9 @@ html.dark .btn-sm { border: 1px solid rgba(255,255,255,0.1); }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+.tab.tab-ingreso.active { color: #059669; border-bottom-color: #059669; }
+.tab.tab-gasto.active   { color: #dc2626; border-bottom-color: #dc2626; }
+
 /* ── Type badges ────────────────────────────────────────────── */
 .tipo-badge {
   display: inline-block;

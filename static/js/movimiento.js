@@ -1,7 +1,7 @@
-let _tabModal = 'movimiento';
+let _tabModal = 'ingreso';
 
 function abrirMovimiento(tab) {
-  _tabModal = tab || 'movimiento';
+  _tabModal = tab || 'ingreso';
   Promise.all([get('/api/cuentas/'), get('/api/categorias/')]).then(([cuentas, categorias]) => {
     const optCuentas = cuentas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
     document.getElementById('mov-cuenta').innerHTML    = optCuentas;
@@ -28,7 +28,8 @@ function cerrarMovimiento() {
 
 function _switchTab(tab) {
   _tabModal = tab;
-  document.getElementById('form-movimiento').style.display  = tab === 'movimiento'   ? '' : 'none';
+  const esMovimiento = tab === 'ingreso' || tab === 'gasto';
+  document.getElementById('form-movimiento').style.display    = esMovimiento      ? '' : 'none';
   document.getElementById('form-transferencia').style.display = tab === 'transferencia' ? '' : 'none';
   document.querySelectorAll('#modal-movimiento .tab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
@@ -36,35 +37,28 @@ function _switchTab(tab) {
 
 async function registrarMovimiento() {
   const descripcion  = document.getElementById('mov-descripcion').value.trim();
-  const monto        = parseFloat(document.getElementById('mov-monto').value);
+  const montoRaw     = parseFloat(document.getElementById('mov-monto').value);
   const cuenta_id    = parseInt(document.getElementById('mov-cuenta').value);
   const categoria_id = parseInt(document.getElementById('mov-categoria').value);
   const fecha        = document.getElementById('mov-fecha').value;
 
-  if (isNaN(cuenta_id)) {
-    toast('Necesitas crear una cuenta primero', 'err');
-    return;
-  }
-  if (!descripcion) {
-    toast('La descripción es obligatoria', 'err');
-    return;
-  }
-  if (isNaN(monto)) {
-    toast('Ingresa un monto válido', 'err');
-    return;
-  }
+  if (isNaN(cuenta_id)) { toast('Necesitas crear una cuenta primero', 'err'); return; }
+  if (!descripcion)     { toast('La descripción es obligatoria', 'err'); return; }
+  if (isNaN(montoRaw) || montoRaw <= 0) { toast('Ingresa un monto mayor a cero', 'err'); return; }
+
+  const monto = _tabModal === 'gasto' ? -Math.abs(montoRaw) : Math.abs(montoRaw);
 
   try {
     await post('/api/transacciones/', {
       descripcion, monto, cuenta_id, categoria_id,
       fecha: new Date(fecha + 'T12:00:00').toISOString()
     });
-    toast('Movimiento registrado', 'ok');
+    toast(`${_tabModal === 'gasto' ? 'Gasto' : 'Ingreso'} registrado`, 'ok');
     cerrarMovimiento();
     if (typeof cargarDashboard === 'function') cargarDashboard();
     if (typeof cargarHistorial === 'function') cargarHistorial();
     if (typeof cargarCuentas   === 'function') cargarCuentas(true);
-    if (monto < 0 && !isNaN(categoria_id)) _alertaPresupuesto(categoria_id);
+    if (_tabModal === 'gasto' && !isNaN(categoria_id)) _alertaPresupuesto(categoria_id);
   } catch (e) {
     toast(e.message, 'err');
   }
@@ -80,15 +74,15 @@ async function _alertaPresupuesto(categoria_id) {
     } else if (p.porcentaje >= 80) {
       toast(`Llevas el ${p.porcentaje}% del presupuesto de ${p.categoria}`, 'warn');
     }
-  } catch { /* silencioso — no bloquear el flujo principal */ }
+  } catch { /* silencioso */ }
 }
 
 async function registrarTransferencia() {
-  const origen_id  = parseInt(document.getElementById('trf-origen').value);
-  const destino_id = parseInt(document.getElementById('trf-destino').value);
-  const monto      = parseFloat(document.getElementById('trf-monto').value);
+  const origen_id   = parseInt(document.getElementById('trf-origen').value);
+  const destino_id  = parseInt(document.getElementById('trf-destino').value);
+  const monto       = parseFloat(document.getElementById('trf-monto').value);
   const descripcion = document.getElementById('trf-descripcion').value.trim() || null;
-  const fecha      = document.getElementById('trf-fecha').value;
+  const fecha       = document.getElementById('trf-fecha').value;
 
   if (isNaN(origen_id) || isNaN(destino_id)) {
     toast('Necesitas crear al menos dos cuentas para transferir', 'err');
@@ -115,13 +109,13 @@ async function registrarTransferencia() {
   }
 }
 
-// ── Inyectar FAB y modal ──────────────────────────────────────
+// ── FAB ──────────────────────────────────────────────────────
 
 const fab = document.createElement('button');
 fab.className = 'fab';
 fab.title = 'Registrar movimiento  [N]';
 fab.textContent = '+';
-fab.onclick = () => abrirMovimiento('movimiento');
+fab.onclick = () => abrirMovimiento('ingreso');
 document.body.appendChild(fab);
 
 document.addEventListener('keydown', e => {
@@ -131,7 +125,7 @@ document.addEventListener('keydown', e => {
 
   if (e.key === 'n' || e.key === 'N') {
     e.preventDefault();
-    if (!document.querySelector('.modal-overlay.abierto')) abrirMovimiento('movimiento');
+    if (!document.querySelector('.modal-overlay.abierto')) abrirMovimiento('ingreso');
     return;
   }
 
@@ -139,6 +133,8 @@ document.addEventListener('keydown', e => {
     if (document.getElementById('modal-movimiento')?.classList.contains('abierto')) cerrarMovimiento();
   }
 });
+
+// ── Modal ─────────────────────────────────────────────────────
 
 const modal = document.createElement('div');
 modal.id = 'modal-movimiento';
@@ -151,19 +147,20 @@ modal.innerHTML = `
     </div>
 
     <div class="tabs" style="margin-bottom:18px">
-      <button class="tab active" id="tab-movimiento"   onclick="_switchTab('movimiento')">Movimiento</button>
-      <button class="tab"        id="tab-transferencia" onclick="_switchTab('transferencia')">Transferencia</button>
+      <button class="tab tab-ingreso active" id="tab-ingreso"      onclick="_switchTab('ingreso')">Ingreso</button>
+      <button class="tab tab-gasto"          id="tab-gasto"        onclick="_switchTab('gasto')">Gasto</button>
+      <button class="tab"                    id="tab-transferencia" onclick="_switchTab('transferencia')">Transferencia</button>
     </div>
 
-    <!-- Formulario movimiento -->
+    <!-- Formulario ingreso / gasto -->
     <div id="form-movimiento">
       <div class="form-group">
         <label>Descripción</label>
         <input type="text" id="mov-descripcion" placeholder="ej: Supermercado HEB">
       </div>
       <div class="form-group">
-        <label>Monto (negativo = gasto, positivo = ingreso)</label>
-        <input type="number" id="mov-monto" step="0.01" placeholder="ej: -850">
+        <label>Monto</label>
+        <input type="number" id="mov-monto" step="0.01" placeholder="0.00" min="0">
       </div>
       <div class="form-group">
         <label>Cuenta</label>
