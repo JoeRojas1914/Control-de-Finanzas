@@ -291,7 +291,12 @@ input, select {
 }
 
 html.dark input, html.dark select {
-  background: rgba(255,255,255,0.05);
+  background: #1a1d24;
+}
+
+html.dark select option {
+  background: #1a1d24;
+  color: #f1f2f4;
 }
 
 input:focus, select:focus {
