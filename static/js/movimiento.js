@@ -119,10 +119,26 @@ async function registrarTransferencia() {
 
 const fab = document.createElement('button');
 fab.className = 'fab';
-fab.title = 'Registrar movimiento';
+fab.title = 'Registrar movimiento  [N]';
 fab.textContent = '+';
 fab.onclick = () => abrirMovimiento('movimiento');
 document.body.appendChild(fab);
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    if (!document.querySelector('.modal-overlay.abierto')) abrirMovimiento('movimiento');
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    if (document.getElementById('modal-movimiento')?.classList.contains('abierto')) cerrarMovimiento();
+  }
+});
 
 const modal = document.createElement('div');
 modal.id = 'modal-movimiento';
