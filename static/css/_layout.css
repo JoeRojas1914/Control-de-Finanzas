@@ -1,10 +1,10 @@
 /* ── Container ──────────────────────────────────────────────── */
-.container { max-width: 1000px; margin: 0 auto; padding: 36px 28px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 32px 36px; }
 
 /* ── Metrics ────────────────────────────────────────────────── */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -58,6 +58,13 @@ html.dark .metric-card[data-color="purple"] { background: rgba(139,92,246,0.08);
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
