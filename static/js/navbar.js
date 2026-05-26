@@ -38,10 +38,9 @@ function cargarNavbar() {
   const hayAuth = !!localStorage.getItem('finanzas_auth');
 
   const links = [
-    { href: 'index.html',         label: 'Dashboard',     icon: _ICONS.dashboard },
+    { href: 'reportes.html',      label: 'Dashboard',     icon: _ICONS.dashboard },
     { href: 'cuentas.html',       label: 'Cuentas',       icon: _ICONS.cuentas   },
     { href: 'historial.html',     label: 'Historial',     icon: _ICONS.historial  },
-    { href: 'reportes.html',      label: 'Reportes',      icon: _ICONS.reportes   },
     { href: 'configuracion.html', label: 'Configuración', icon: _ICONS.config     },
   ];
 

@@ -13,8 +13,12 @@
 
   <main class="container">
 
-    <!-- KPIs del mes -->
-    <div class="metrics-grid" id="kpis-mes">
+    <!-- KPIs generales -->
+    <div class="metrics-grid">
+      <div class="metric-card" data-color="blue">
+        <p class="metric-label">Patrimonio total</p>
+        <p class="metric-value" id="kpi-patrimonio">—</p>
+      </div>
       <div class="metric-card" data-color="green">
         <p class="metric-label">Ingresos del mes</p>
         <p class="metric-value green" id="kpi-ingresos">—</p>
@@ -23,13 +27,40 @@
         <p class="metric-label">Gastos del mes</p>
         <p class="metric-value red" id="kpi-gastos">—</p>
       </div>
-      <div class="metric-card" data-color="blue">
+      <div class="metric-card" data-color="purple">
         <p class="metric-label">Balance neto</p>
         <p class="metric-value" id="kpi-balance">—</p>
       </div>
       <div class="metric-card" data-color="amber">
         <p class="metric-label">Tasa de ahorro</p>
         <p class="metric-value" id="kpi-ahorro">—</p>
+      </div>
+      <div class="metric-card" data-color="red">
+        <p class="metric-label">Deuda tarjeta</p>
+        <p class="metric-value red" id="kpi-deuda">—</p>
+      </div>
+    </div>
+
+    <!-- Cuentas + Últimas transacciones -->
+    <div class="grid-2">
+      <div class="card">
+        <h2 class="card-title">Cuentas de débito</h2>
+        <div id="lista-cuentas-dash">Cargando...</div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Últimos movimientos</h2>
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th>Cuenta</th>
+              <th>Fecha</th>
+              <th style="text-align:right">Monto</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-tx-dash"></tbody>
+        </table>
       </div>
     </div>
 

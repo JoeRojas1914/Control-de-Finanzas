@@ -9,8 +9,52 @@ const COLORES = [
   '#BA7517', '#D4537E', '#639922', '#888780'
 ];
 
+async function cargarDatosDashboard() {
+  const resultado = await post('/api/recurrentes/aplicar', {});
+  if (resultado?.aplicadas > 0)
+    toast(`${resultado.aplicadas} transacción(es) recurrente(s) aplicada(s)`, 'ok');
+
+  const resultadoRend = await post('/api/rendimientos-programados/aplicar', {});
+  if (resultadoRend?.aplicados > 0)
+    toast(`${resultadoRend.aplicados} rendimiento(s) aplicado(s) automáticamente`, 'ok');
+
+  const [data, cuentas] = await Promise.all([
+    get('/api/dashboard/'),
+    get('/api/cuentas/'),
+  ]);
+
+  document.getElementById('kpi-patrimonio').textContent = fmt(data.patrimonio);
+  document.getElementById('kpi-deuda').textContent      = fmt(data.deuda_tarjeta);
+
+  const debito = cuentas.filter(c => c.tipo === 'debito');
+  document.getElementById('lista-cuentas-dash').innerHTML = debito.length
+    ? debito.map(c => `
+        <div class="cuenta-row">
+          <div class="cuenta-badge">${c.nombre.slice(0, 2).toUpperCase()}</div>
+          <div class="cuenta-info">
+            <div class="cuenta-nombre">${c.nombre}</div>
+            <div class="cuenta-tipo">Débito</div>
+          </div>
+          <div class="cuenta-saldo">${fmt(c.saldo)}</div>
+        </div>`).join('')
+    : '<div class="empty-state">Sin cuentas de débito</div>';
+
+  const tx = data.ultimas_transacciones;
+  document.getElementById('tabla-tx-dash').innerHTML = tx.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:var(--text-hint);padding:20px">Sin movimientos aún</td></tr>'
+    : tx.map(t => `
+        <tr>
+          <td>${t.descripcion}</td>
+          <td><span class="cat-badge">${t.categoria || 'Sin categoría'}</span></td>
+          <td>${t.cuenta}</td>
+          <td>${fmtFecha(t.fecha)}</td>
+          <td style="text-align:right" class="${t.monto < 0 ? 'monto-neg' : 'monto-pos'}">${fmt(t.monto)}</td>
+        </tr>`).join('');
+}
+
 async function cargarGraficas() {
   await Promise.all([
+    cargarDatosDashboard(),
     cargarResumenMes(),
     cargarGastosPorCategoria(),
     cargarPresupuestosReporte(),
