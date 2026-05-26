@@ -38,7 +38,10 @@
       <!-- Filtro de mes -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <h2 class="card-title" style="margin:0">Historial</h2>
-        <select id="filtro-mes" onchange="cambiarMes()" style="width:auto;padding:6px 12px;font-size:13px"></select>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filtro-mes" onchange="cambiarMes()" style="width:auto;padding:6px 12px;font-size:13px"></select>
+          <button class="btn-sm" onclick="exportarCSV()" title="Descargar CSV">↓ CSV</button>
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -130,12 +133,12 @@
   </div>
 
   <!-- Modal editar rendimiento -->
-  <div id="modal-editar-rend" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:420px;margin:20px">
+  <div id="modal-editar-rend" class="modal-overlay">
+    <div class="modal-box" style="max-width:420px">
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="modal-header">
         <h2 class="card-title" style="margin:0">Editar rendimiento</h2>
-        <button onclick="cerrarModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">✕</button>
+        <button class="modal-close" onclick="cerrarModal()">✕</button>
       </div>
 
       <input type="hidden" id="editar-id">

@@ -299,11 +299,11 @@ function abrirEditar(id, cuentaId, monto, fecha) {
     `<option value="${c.id}" ${c.id === cuentaId ? 'selected' : ''}>${c.nombre}</option>`
   ).join('');
 
-  document.getElementById('modal-editar-rend').style.display = 'flex';
+  document.getElementById('modal-editar-rend').classList.add('abierto');
 }
 
 function cerrarModal() {
-  document.getElementById('modal-editar-rend').style.display = 'none';
+  document.getElementById('modal-editar-rend').classList.remove('abierto');
 }
 
 document.getElementById('modal-editar-rend').addEventListener('click', function(e) {
@@ -345,6 +345,73 @@ async function eliminarRendimiento(id) {
   } catch (e) {
     toast(e.message, 'err');
   }
+}
+
+/* ── Exportar CSV ── */
+
+function exportarCSV() {
+  const busqueda = document.getElementById('filtro-busqueda')?.value.trim().toLowerCase() || '';
+  const catId    = document.getElementById('filtro-categoria')?.value || '';
+  const cuentaId = document.getElementById('filtro-cuenta')?.value || '';
+
+  const txFiltradas = filtrarMes(transacciones).filter(t => {
+    if (busqueda && !t.descripcion.toLowerCase().includes(busqueda)) return false;
+    if (catId    && String(t.categoria?.id) !== catId)               return false;
+    if (cuentaId && String(t.cuenta?.id)    !== cuentaId)            return false;
+    return true;
+  });
+
+  const rendMes = filtrarMes(rendimientos);
+  const trfMes  = mesActual
+    ? transferencias.filter(t => t.fecha.startsWith(mesActual))
+    : transferencias;
+
+  const esc = s => `"${String(s).replace(/"/g, '""')}"`;
+
+  let filas = [];
+
+  if (tabActual === 'transferencias') {
+    trfMes.forEach(t => filas.push([
+      'Transferencia',
+      esc(t.descripcion || ''),
+      '—',
+      esc(`${t.cuenta_origen} → ${t.cuenta_destino}`),
+      t.fecha.split('T')[0],
+      t.monto,
+    ]));
+  } else {
+    if (tabActual === 'todos' || tabActual === 'rendimientos') {
+      rendMes.forEach(r => filas.push([
+        'Rendimiento', esc(r.cuenta_nombre), 'Rendimiento',
+        esc(r.cuenta_nombre), r.fecha.split('T')[0], r.monto,
+      ]));
+    }
+    const ingresos = txFiltradas.filter(t => t.monto > 0);
+    const gastos   = txFiltradas.filter(t => t.monto < 0);
+    if (tabActual === 'todos' || tabActual === 'ingresos') {
+      ingresos.forEach(t => filas.push([
+        'Ingreso', esc(t.descripcion), esc(t.categoria?.nombre || 'Sin categoría'),
+        esc(t.cuenta?.nombre || '—'), t.fecha.split('T')[0], t.monto,
+      ]));
+    }
+    if (tabActual === 'todos' || tabActual === 'gastos') {
+      gastos.forEach(t => filas.push([
+        'Gasto', esc(t.descripcion), esc(t.categoria?.nombre || 'Sin categoría'),
+        esc(t.cuenta?.nombre || '—'), t.fecha.split('T')[0], t.monto,
+      ]));
+    }
+    filas.sort((a, b) => new Date(b[4]) - new Date(a[4]));
+  }
+
+  const encabezado = ['Tipo', 'Descripcion', 'Categoria', 'Cuenta', 'Fecha', 'Monto'];
+  const csv = [encabezado.join(','), ...filas.map(f => f.join(','))].join('\n');
+
+  const nombre = mesActual ? `finanzas_${mesActual}.csv` : 'finanzas_todo.csv';
+  const blob   = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+  URL.revokeObjectURL(url);
 }
 
 cargarHistorial();

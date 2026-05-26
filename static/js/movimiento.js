@@ -16,11 +16,11 @@ function abrirMovimiento(tab) {
     document.getElementById('trf-fecha').value = new Date().toISOString().split('T')[0];
   });
   _switchTab(_tabModal);
-  document.getElementById('modal-movimiento').style.display = 'flex';
+  document.getElementById('modal-movimiento').classList.add('abierto');
 }
 
 function cerrarMovimiento() {
-  document.getElementById('modal-movimiento').style.display = 'none';
+  document.getElementById('modal-movimiento').classList.remove('abierto');
   ['mov-descripcion','mov-monto','trf-monto','trf-descripcion'].forEach(id => {
     document.getElementById(id).value = '';
   });
@@ -112,12 +112,12 @@ document.body.appendChild(fab);
 
 const modal = document.createElement('div');
 modal.id = 'modal-movimiento';
-modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;';
+modal.className = 'modal-overlay';
 modal.innerHTML = `
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:440px;margin:20px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
       <h2 class="card-title" style="margin:0">Registrar</h2>
-      <button onclick="cerrarMovimiento()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">✕</button>
+      <button class="modal-close" onclick="cerrarMovimiento()">✕</button>
     </div>
 
     <div class="tabs" style="margin-bottom:18px">
