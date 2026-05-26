@@ -52,6 +52,15 @@
       <div id="lista-recurrentes">Cargando...</div>
     </div>
 
+    <!-- Metas de ahorro -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Metas de ahorro</h2>
+        <button class="btn-sm" onclick="abrirModalMeta()">+ Nueva meta</button>
+      </div>
+      <div id="lista-metas">Cargando...</div>
+    </div>
+
     <!-- Preferencias -->
     <div class="card">
       <h2 class="card-title">Preferencias</h2>
@@ -89,6 +98,39 @@
     </div>
 
   </main>
+
+  <!-- Modal: meta de ahorro (nueva / editar) -->
+  <div id="modal-meta" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="card-title" style="margin:0" id="modal-meta-titulo">Nueva meta</h2>
+        <button class="modal-close" onclick="cerrarModalMeta()">✕</button>
+      </div>
+      <input type="hidden" id="meta-id">
+      <input type="hidden" id="meta-icono" value="target">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="meta-nombre" placeholder="ej: Auto, Vacaciones, Fondo de emergencia">
+      </div>
+      <div class="form-group">
+        <label>Icono</label>
+        <div class="icono-picker" id="meta-icono-grid"></div>
+      </div>
+      <div class="form-group">
+        <label>Monto objetivo ($)</label>
+        <input type="number" id="meta-objetivo" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Monto ahorrado hasta ahora ($)</label>
+        <input type="number" id="meta-actual" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Fecha objetivo (opcional)</label>
+        <input type="date" id="meta-fecha">
+      </div>
+      <button class="btn-primary" onclick="guardarMeta()">Guardar</button>
+    </div>
+  </div>
 
   <!-- Modal: rendimiento programado (nuevo / editar) -->
   <div id="modal-rendp" class="modal-overlay">
@@ -272,6 +314,7 @@
   <script src="/static/js/toast.js"></script>
   <script src="/static/js/navbar.js"></script>
   <script src="/static/js/movimiento.js"></script>
+  <script src="/static/js/meta-icons.js"></script>
   <script src="/static/js/configuracion.js"></script>
 
 </body>

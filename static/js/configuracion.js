@@ -619,9 +619,146 @@ async function toggleHorario(id, activo) {
   }
 }
 
+// ── Metas de ahorro ───────────────────────────────────────────
+
+function _iniciarIconPicker() {
+  const grid = document.getElementById('meta-icono-grid');
+  if (!grid || grid.children.length) return;
+  grid.innerHTML = Object.keys(_META_ICONS_PATHS).map(k => `
+    <button type="button" class="icono-btn" data-key="${k}"
+      title="${_META_LABELS[k]}"
+      onclick="_seleccionarIcono('${k}', this)">
+      ${_metaIcono(k, 18)}
+    </button>`).join('');
+}
+
+function _seleccionarIcono(key, btn) {
+  document.querySelectorAll('#meta-icono-grid .icono-btn').forEach(b => b.classList.remove('activo'));
+  btn.classList.add('activo');
+  document.getElementById('meta-icono').value = key;
+}
+
+function _setIconoActivo(key) {
+  document.querySelectorAll('#meta-icono-grid .icono-btn').forEach(b => {
+    b.classList.toggle('activo', b.dataset.key === key);
+  });
+  document.getElementById('meta-icono').value = key;
+}
+
+async function cargarMetas() {
+  const metas = await get('/api/metas/');
+  const el    = document.getElementById('lista-metas');
+  if (!metas.length) {
+    el.innerHTML = '<div class="empty-state">Sin metas definidas</div>';
+    return;
+  }
+  el.innerHTML = metas.map(m => {
+    const pct   = m.monto_objetivo > 0
+      ? Math.min(Math.round(m.monto_actual / m.monto_objetivo * 100), 100)
+      : 0;
+    const done  = m.monto_actual >= m.monto_objetivo;
+    const cls   = done ? '' : pct >= 75 ? 'warn' : '';
+    const color = done ? '#1D9E75' : pct >= 75 ? '#BA7517' : 'var(--text-muted)';
+    return `
+      <div class="cuenta-row" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="meta-badge">${_metaIcono(m.emoji || 'target', 18)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div class="cuenta-nombre">${m.nombre}</div>
+              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+                <span style="font-size:12px;color:${color};font-weight:500">
+                  ${fmt(m.monto_actual)} / ${fmt(m.monto_objetivo)} (${pct}%)
+                </span>
+                <button class="btn-sm" onclick="abrirModalMeta(${m.id})">Editar</button>
+                <button class="btn-sm btn-danger" onclick="eliminarMeta(${m.id}, ${JSON.stringify(m.nombre)})">Eliminar</button>
+              </div>
+            </div>
+            <div class="progress-bar" style="margin-top:6px">
+              <div class="progress-fill ${cls}" style="width:${pct}%;${done ? 'background:#1D9E75' : ''}"></div>
+            </div>
+            ${m.fecha_objetivo ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${fmtFecha(m.fecha_objetivo)}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function abrirModalMeta(id) {
+  _iniciarIconPicker();
+  if (id) {
+    const metas = await get('/api/metas/');
+    const m     = metas.find(x => x.id === id);
+    document.getElementById('modal-meta-titulo').textContent = 'Editar meta';
+    document.getElementById('meta-id').value       = m.id;
+    document.getElementById('meta-nombre').value   = m.nombre;
+    document.getElementById('meta-objetivo').value = m.monto_objetivo;
+    document.getElementById('meta-actual').value   = m.monto_actual;
+    document.getElementById('meta-fecha').value    = m.fecha_objetivo ? m.fecha_objetivo.split('T')[0] : '';
+    _setIconoActivo(m.emoji || 'target');
+  } else {
+    document.getElementById('modal-meta-titulo').textContent = 'Nueva meta';
+    document.getElementById('meta-id').value       = '';
+    document.getElementById('meta-nombre').value   = '';
+    document.getElementById('meta-objetivo').value = '';
+    document.getElementById('meta-actual').value   = '';
+    document.getElementById('meta-fecha').value    = '';
+    _setIconoActivo('target');
+  }
+  document.getElementById('modal-meta').classList.add('abierto');
+}
+
+function cerrarModalMeta() {
+  document.getElementById('modal-meta').classList.remove('abierto');
+}
+
+document.getElementById('modal-meta').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalMeta();
+});
+
+async function guardarMeta() {
+  const id             = document.getElementById('meta-id').value;
+  const nombre         = document.getElementById('meta-nombre').value.trim();
+  const emoji          = document.getElementById('meta-icono').value || 'target';
+  const monto_objetivo = parseFloat(document.getElementById('meta-objetivo').value);
+  const monto_actual   = parseFloat(document.getElementById('meta-actual').value) || 0;
+  const fechaStr       = document.getElementById('meta-fecha').value;
+  const fecha_objetivo = fechaStr ? new Date(fechaStr + 'T12:00:00').toISOString() : null;
+
+  if (!nombre)                         { toast('El nombre es obligatorio', 'err'); return; }
+  if (!monto_objetivo || monto_objetivo <= 0) { toast('El monto objetivo debe ser mayor a cero', 'err'); return; }
+
+  const cuerpo = { nombre, emoji, monto_objetivo, monto_actual, fecha_objetivo };
+  try {
+    if (id) {
+      await patch(`/api/metas/${id}`, cuerpo);
+      toast('Meta actualizada', 'ok');
+    } else {
+      await post('/api/metas/', cuerpo);
+      toast('Meta creada', 'ok');
+    }
+    cerrarModalMeta();
+    cargarMetas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarMeta(id, nombre) {
+  if (!confirm(`¿Eliminar la meta "${nombre}"?`)) return;
+  try {
+    await del(`/api/metas/${id}`);
+    toast(`Meta "${nombre}" eliminada`, 'ok');
+    cargarMetas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 cargarCategorias();
 cargarPresupuestos();
 cargarRecurrentes();
 cargarRendimientosProgramados();
+cargarMetas();
 sincronizarBtnTema();

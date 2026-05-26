@@ -682,6 +682,37 @@ html.dark .modal-box {
 
 .modal-close:hover { background: var(--bg-hover); color: var(--text); }
 
+/* ── Icon picker (metas) ─────────────────────────────────────── */
+.icono-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.icono-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  padding: 6px;
+}
+
+.icono-btn:hover { border-color: #1D9E75; color: #1D9E75; }
+.icono-btn.activo { border-color: #1D9E75; background: rgba(29,158,117,0.1); color: #1D9E75; }
+
+.meta-badge {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(29,158,117,0.12); color: #1D9E75;
+}
+
 /* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   body { padding-left: 0; padding-bottom: 72px; }

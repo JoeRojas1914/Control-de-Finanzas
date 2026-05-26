@@ -128,3 +128,14 @@ class RendimientoProgramado(Base):
     creado_en     = Column(DateTime, default=datetime.now)
 
     cuenta = relationship("Cuenta")
+
+class Meta(Base):
+    __tablename__ = "metas"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    nombre         = Column(String, nullable=False)
+    emoji          = Column(String, nullable=True)
+    monto_objetivo = Column(Float, nullable=False)
+    monto_actual   = Column(Float, default=0.0)
+    fecha_objetivo = Column(DateTime, nullable=True)
+    creada_en      = Column(DateTime, default=datetime.now)

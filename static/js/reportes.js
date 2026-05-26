@@ -61,7 +61,53 @@ async function cargarGraficas() {
     cargarIngresosVsGastos(),
     cargarPatrimonioHistorico(),
     cargarRendimientosMes(),
+    cargarMetasDash(),
   ]);
+}
+
+async function cargarMetasDash() {
+  const metas = await get('/api/metas/');
+  const card  = document.getElementById('card-metas');
+  if (!metas.length) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  document.getElementById('lista-metas-dash').innerHTML = metas.map(m => {
+    const pct  = m.monto_objetivo > 0
+      ? Math.min(Math.round(m.monto_actual / m.monto_objetivo * 100), 100)
+      : 0;
+    const done  = m.monto_actual >= m.monto_objetivo;
+    const color = done ? '#1D9E75' : pct >= 75 ? '#BA7517' : 'var(--text-muted)';
+
+    let nota = '';
+    if (done) {
+      nota = '<span style="color:#1D9E75;font-weight:500">¡Meta alcanzada!</span>';
+    } else if (m.fecha_objetivo) {
+      const dias = Math.ceil((new Date(m.fecha_objetivo) - new Date()) / 86400000);
+      if (dias > 0) {
+        const porDia = (m.monto_objetivo - m.monto_actual) / dias;
+        nota = `${dias} días restantes · necesitas ${fmt(porDia)}/día`;
+      } else {
+        nota = '<span style="color:#D85A30">Fecha límite vencida</span>';
+      }
+    }
+
+    return `
+      <div class="cuenta-row" style="align-items:flex-start;gap:10px">
+        <div class="meta-badge">${_metaIcono(m.emoji || 'target', 18)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span class="cuenta-nombre">${m.nombre}</span>
+            <span style="font-size:12px;color:${color};font-weight:500;flex-shrink:0">
+              ${fmt(m.monto_actual)} / ${fmt(m.monto_objetivo)} (${pct}%)
+            </span>
+          </div>
+          <div class="progress-bar" style="margin-top:6px">
+            <div class="progress-fill" style="width:${pct}%;background:${done ? '#1D9E75' : pct >= 75 ? '#BA7517' : 'var(--accent)'}"></div>
+          </div>
+          ${nota ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${nota}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function cargarPresupuestosReporte() {

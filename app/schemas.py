@@ -98,3 +98,29 @@ class RendProgramadoOut(RendProgramadoCreate):
 
     class Config:
         from_attributes = True
+
+class MetaCreate(BaseModel):
+    nombre         : str
+    emoji          : Optional[str] = None
+    monto_objetivo : float
+    monto_actual   : float = 0.0
+    fecha_objetivo : Optional[datetime] = None
+
+class MetaUpdate(BaseModel):
+    nombre         : Optional[str] = None
+    emoji          : Optional[str] = None
+    monto_objetivo : Optional[float] = None
+    monto_actual   : Optional[float] = None
+    fecha_objetivo : Optional[datetime] = None
+
+class MetaOut(BaseModel):
+    id             : int
+    nombre         : str
+    emoji          : Optional[str] = None
+    monto_objetivo : float
+    monto_actual   : float
+    fecha_objetivo : Optional[datetime] = None
+    creada_en      : datetime
+
+    class Config:
+        from_attributes = True
