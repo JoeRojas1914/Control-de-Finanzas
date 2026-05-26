@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
 from app.database import get_db
 from app.models import Usuario
-from app.auth import hash_password, get_current_user
+from app.auth import hash_password, verify_password, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -11,6 +13,20 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 class RegisterRequest(BaseModel):
     username: str
     password: str
+
+
+class PerfilUpdate(BaseModel):
+    nombre:           Optional[str] = None
+    apellido:         Optional[str] = None
+    correo:           Optional[str] = None
+    fecha_nacimiento: Optional[str] = None
+    moneda:           Optional[str] = None
+    avatar_color:     Optional[str] = None
+
+
+class PasswordUpdate(BaseModel):
+    clave_actual: str
+    clave_nueva:  str
 
 
 @router.post("/register")
@@ -30,4 +46,44 @@ def register(datos: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.get("/me")
 def me(user: Usuario = Depends(get_current_user)):
-    return {"id": user.id, "username": user.username}
+    return {
+        "id":               user.id,
+        "username":         user.username,
+        "nombre":           user.nombre,
+        "apellido":         user.apellido,
+        "correo":           user.correo,
+        "fecha_nacimiento": user.fecha_nacimiento.date().isoformat() if user.fecha_nacimiento else None,
+        "moneda":           user.moneda or "MXN",
+        "avatar_color":     user.avatar_color or "#6366f1",
+        "creado_en":        user.creado_en,
+    }
+
+
+@router.patch("/me")
+def actualizar_perfil(
+    datos: PerfilUpdate,
+    db:   Session = Depends(get_db),
+    user: Usuario = Depends(get_current_user),
+):
+    for campo, valor in datos.model_dump(exclude_none=True).items():
+        if campo == "fecha_nacimiento" and valor:
+            setattr(user, campo, datetime.fromisoformat(valor))
+        else:
+            setattr(user, campo, valor)
+    db.commit()
+    return {"ok": True}
+
+
+@router.patch("/password")
+def cambiar_password(
+    datos: PasswordUpdate,
+    db:   Session = Depends(get_db),
+    user: Usuario = Depends(get_current_user),
+):
+    if not verify_password(datos.clave_actual, user.password_hash):
+        raise HTTPException(status_code=400, detail="Contraseña actual incorrecta")
+    if len(datos.clave_nueva) < 4:
+        raise HTTPException(status_code=422, detail="La nueva contraseña debe tener al menos 4 caracteres")
+    user.password_hash = hash_password(datos.clave_nueva)
+    db.commit()
+    return {"ok": True}
