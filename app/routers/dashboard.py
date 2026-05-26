@@ -1,14 +1,21 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
-from app.models import Cuenta, Transaccion, TipoCuenta
+from app.models import Cuenta, Transaccion, TipoCuenta, Usuario
+from app.auth import get_current_user
 from app.utils import resumen_rendimientos
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
+
 @router.get("/")
-def resumen_dashboard(db: Session = Depends(get_db)):
-    cuentas = db.query(Cuenta).options(joinedload(Cuenta.rendimientos)).all()
+def resumen_dashboard(db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    cuentas = (
+        db.query(Cuenta)
+        .options(joinedload(Cuenta.rendimientos))
+        .filter(Cuenta.usuario_id == user.id)
+        .all()
+    )
 
     debito  = [c for c in cuentas if c.tipo == TipoCuenta.debito]
     credito = [c for c in cuentas if c.tipo == TipoCuenta.credito]
@@ -23,18 +30,20 @@ def resumen_dashboard(db: Session = Depends(get_db)):
         rendimientos_totales["mensual"] += r["mensual"]
         rendimientos_totales["anual"]   += r["anual"]
 
+    ids = [c.id for c in cuentas]
     ultimas_tx = (
         db.query(Transaccion)
         .options(joinedload(Transaccion.cuenta), joinedload(Transaccion.categoria))
+        .filter(Transaccion.cuenta_id.in_(ids))
         .order_by(Transaccion.fecha.desc())
         .limit(5)
         .all()
     )
 
     return {
-        "patrimonio"          : round(patrimonio, 2),
-        "deuda_tarjeta"       : round(deuda_tarjeta, 2),
-        "rendimientos"        : rendimientos_totales,
+        "patrimonio"           : round(patrimonio, 2),
+        "deuda_tarjeta"        : round(deuda_tarjeta, 2),
+        "rendimientos"         : rendimientos_totales,
         "ultimas_transacciones": [
             {
                 "id"         : tx.id,
@@ -45,5 +54,5 @@ def resumen_dashboard(db: Session = Depends(get_db)):
                 "categoria"  : tx.categoria.nombre if tx.categoria else None,
             }
             for tx in ultimas_tx
-        ]
+        ],
     }

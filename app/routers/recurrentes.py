@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, time, timedelta
 from calendar import monthrange
 from app.database import get_db
-from app.models import TransaccionRecurrente, Transaccion, Cuenta
+from app.models import TransaccionRecurrente, Transaccion, Cuenta, Usuario
 from app.schemas import RecurrenteCreate, RecurrenteOut
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/recurrentes", tags=["recurrentes"])
 
@@ -27,22 +28,23 @@ def calcular_proxima(fecha: datetime, frecuencia: str) -> datetime:
 
 
 @router.get("/", response_model=list[RecurrenteOut])
-def listar_recurrentes(db: Session = Depends(get_db)):
+def listar_recurrentes(db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
     return (
         db.query(TransaccionRecurrente)
         .options(joinedload(TransaccionRecurrente.cuenta),
                  joinedload(TransaccionRecurrente.categoria))
+        .filter(TransaccionRecurrente.usuario_id == user.id)
         .order_by(TransaccionRecurrente.proxima_fecha)
         .all()
     )
 
 
 @router.post("/", response_model=RecurrenteOut)
-def crear_recurrente(datos: RecurrenteCreate, db: Session = Depends(get_db)):
-    cuenta = db.query(Cuenta).filter(Cuenta.id == datos.cuenta_id).first()
+def crear_recurrente(datos: RecurrenteCreate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    cuenta = db.query(Cuenta).filter(Cuenta.id == datos.cuenta_id, Cuenta.usuario_id == user.id).first()
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
-    rec = TransaccionRecurrente(**datos.model_dump())
+    rec = TransaccionRecurrente(**datos.model_dump(), usuario_id=user.id)
     db.add(rec)
     db.commit()
     db.refresh(rec)
@@ -53,8 +55,10 @@ def crear_recurrente(datos: RecurrenteCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/{rec_id}", response_model=RecurrenteOut)
-def editar_recurrente(rec_id: int, datos: RecurrenteCreate, db: Session = Depends(get_db)):
-    rec = db.query(TransaccionRecurrente).filter(TransaccionRecurrente.id == rec_id).first()
+def editar_recurrente(rec_id: int, datos: RecurrenteCreate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    rec = db.query(TransaccionRecurrente).filter(
+        TransaccionRecurrente.id == rec_id, TransaccionRecurrente.usuario_id == user.id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Recurrente no encontrada")
     for campo, valor in datos.model_dump().items():
@@ -68,8 +72,10 @@ def editar_recurrente(rec_id: int, datos: RecurrenteCreate, db: Session = Depend
 
 
 @router.patch("/{rec_id}/toggle")
-def toggle_recurrente(rec_id: int, db: Session = Depends(get_db)):
-    rec = db.query(TransaccionRecurrente).filter(TransaccionRecurrente.id == rec_id).first()
+def toggle_recurrente(rec_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    rec = db.query(TransaccionRecurrente).filter(
+        TransaccionRecurrente.id == rec_id, TransaccionRecurrente.usuario_id == user.id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Recurrente no encontrada")
     rec.activa = not rec.activa
@@ -78,8 +84,10 @@ def toggle_recurrente(rec_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{rec_id}")
-def eliminar_recurrente(rec_id: int, db: Session = Depends(get_db)):
-    rec = db.query(TransaccionRecurrente).filter(TransaccionRecurrente.id == rec_id).first()
+def eliminar_recurrente(rec_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    rec = db.query(TransaccionRecurrente).filter(
+        TransaccionRecurrente.id == rec_id, TransaccionRecurrente.usuario_id == user.id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Recurrente no encontrada")
     db.delete(rec)
@@ -88,13 +96,14 @@ def eliminar_recurrente(rec_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/aplicar")
-def aplicar_recurrentes(db: Session = Depends(get_db)):
-    hoy = datetime.now().date()
+def aplicar_recurrentes(db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    hoy    = datetime.now().date()
     limite = datetime.combine(hoy, time.max)
 
     activas = (
         db.query(TransaccionRecurrente)
         .filter(
+            TransaccionRecurrente.usuario_id == user.id,
             TransaccionRecurrente.activa == True,
             TransaccionRecurrente.proxima_fecha <= limite,
         )

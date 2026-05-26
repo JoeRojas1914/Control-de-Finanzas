@@ -1,15 +1,23 @@
-from fastapi import FastAPI, Depends
+from dotenv import load_dotenv
+load_dotenv()
+
+from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from app.database import engine
 from app import models
-from app.auth import verificar_credenciales
-from app.routers import cuentas, transacciones, rendimientos, dashboard, categorias, reportes, recurrentes, presupuestos, transferencias, rendimientos_programados, metas
+from app.routers import (
+    auth, cuentas, transacciones, rendimientos, dashboard,
+    categorias, reportes, recurrentes, presupuestos,
+    transferencias, rendimientos_programados, metas,
+)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Control de Finanzas", dependencies=[Depends(verificar_credenciales)])
+app = FastAPI(title="Control de Finanzas")
 
+# /api/auth/register es público — los demás endpoints verifican usuario dentro del router
+app.include_router(auth.router)
 app.include_router(cuentas.router)
 app.include_router(transacciones.router)
 app.include_router(rendimientos.router)
@@ -23,6 +31,7 @@ app.include_router(rendimientos_programados.router)
 app.include_router(metas.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/")
 def root():

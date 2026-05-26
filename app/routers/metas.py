@@ -1,20 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Meta
+from app.models import Meta, Usuario
 from app.schemas import MetaCreate, MetaUpdate, MetaOut
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/metas", tags=["metas"])
 
 
 @router.get("/", response_model=list[MetaOut])
-def listar_metas(db: Session = Depends(get_db)):
-    return db.query(Meta).order_by(Meta.creada_en).all()
+def listar_metas(db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    return db.query(Meta).filter(Meta.usuario_id == user.id).order_by(Meta.creada_en).all()
 
 
 @router.post("/", response_model=MetaOut)
-def crear_meta(datos: MetaCreate, db: Session = Depends(get_db)):
-    meta = Meta(**datos.model_dump())
+def crear_meta(datos: MetaCreate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    meta = Meta(**datos.model_dump(), usuario_id=user.id)
     db.add(meta)
     db.commit()
     db.refresh(meta)
@@ -22,8 +23,8 @@ def crear_meta(datos: MetaCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/{meta_id}", response_model=MetaOut)
-def editar_meta(meta_id: int, datos: MetaUpdate, db: Session = Depends(get_db)):
-    meta = db.query(Meta).filter(Meta.id == meta_id).first()
+def editar_meta(meta_id: int, datos: MetaUpdate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    meta = db.query(Meta).filter(Meta.id == meta_id, Meta.usuario_id == user.id).first()
     if not meta:
         raise HTTPException(status_code=404, detail="Meta no encontrada")
     for campo, valor in datos.model_dump(exclude_unset=True).items():
@@ -34,8 +35,8 @@ def editar_meta(meta_id: int, datos: MetaUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{meta_id}")
-def eliminar_meta(meta_id: int, db: Session = Depends(get_db)):
-    meta = db.query(Meta).filter(Meta.id == meta_id).first()
+def eliminar_meta(meta_id: int, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    meta = db.query(Meta).filter(Meta.id == meta_id, Meta.usuario_id == user.id).first()
     if not meta:
         raise HTTPException(status_code=404, detail="Meta no encontrada")
     db.delete(meta)
