@@ -29,13 +29,50 @@ function toggleTema() {
 
 function cerrarSesion() {
   localStorage.removeItem('finanzas_auth');
+  localStorage.removeItem('finanzas_perfil');
   window.location.href = '/static/login.html';
+}
+
+function _iniciales(nombre, apellido, username) {
+  if (nombre && apellido) return (nombre[0] + apellido[0]).toUpperCase();
+  if (nombre) return nombre[0].toUpperCase();
+  return username ? username[0].toUpperCase() : '?';
+}
+
+function _actualizarAvatar(perfil) {
+  const avEl   = document.getElementById('nav-avatar');
+  const nameEl = document.getElementById('nav-nombre');
+  if (!avEl) return;
+  avEl.textContent       = _iniciales(perfil.nombre, perfil.apellido, perfil.username);
+  avEl.style.background  = perfil.avatar_color || '#6366f1';
+  if (nameEl) {
+    nameEl.textContent = perfil.nombre
+      ? [perfil.nombre, perfil.apellido].filter(Boolean).join(' ')
+      : perfil.username;
+  }
+}
+
+async function _cargarPerfil() {
+  try {
+    const perfil = await get('/api/auth/me');
+    if (!perfil) return;
+    localStorage.setItem('finanzas_perfil', JSON.stringify(perfil));
+    _actualizarAvatar(perfil);
+  } catch {}
 }
 
 function cargarNavbar() {
   const pagina  = window.location.pathname.split('/').pop();
   const oscuro  = localStorage.getItem('tema') === 'obscuro';
   const hayAuth = !!localStorage.getItem('finanzas_auth');
+  const cache   = localStorage.getItem('finanzas_perfil');
+  const perfil  = cache ? JSON.parse(cache) : null;
+
+  const iniciales = perfil ? _iniciales(perfil.nombre, perfil.apellido, perfil.username) : '?';
+  const color     = perfil?.avatar_color || '#6366f1';
+  const nombre    = perfil
+    ? (perfil.nombre ? [perfil.nombre, perfil.apellido].filter(Boolean).join(' ') : perfil.username)
+    : '—';
 
   const links = [
     { href: 'reportes.html',      label: 'Dashboard',     icon: _ICONS.dashboard },
@@ -61,6 +98,15 @@ function cargarNavbar() {
     </div>
 
     <div class="nav-footer">
+      ${hayAuth ? `
+        <a href="/static/perfil.html" class="nav-user-btn ${pagina === 'perfil.html' ? 'nav-user-btn--active' : ''}">
+          <div class="nav-avatar-sm" id="nav-avatar" style="background:${color}">${iniciales}</div>
+          <div class="nav-user-info">
+            <span class="nav-user-name" id="nav-nombre">${nombre}</span>
+            <span class="nav-user-sub">Mi perfil</span>
+          </div>
+        </a>
+      ` : ''}
       <button class="dark-toggle" id="btn-tema" onclick="toggleTema()">
         ${oscuro ? `${_ICONS.sun} Modo claro` : `${_ICONS.moon} Modo oscuro`}
       </button>
@@ -73,6 +119,7 @@ function cargarNavbar() {
   `;
 
   aplicarTema();
+  if (hayAuth) _cargarPerfil();
 }
 
 cargarNavbar();

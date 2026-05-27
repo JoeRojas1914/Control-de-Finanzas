@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi perfil — Finanzas</title>
+  <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <nav class="navbar" id="navbar"></nav>
+
+  <main class="container">
+
+    <!-- Encabezado de perfil -->
+    <div class="perfil-header card">
+      <div class="perfil-avatar-grande" id="avatar-grande">?</div>
+      <div class="perfil-header-info">
+        <h1 class="perfil-nombre" id="ph-nombre">—</h1>
+        <p class="perfil-username" id="ph-username">@—</p>
+        <p class="perfil-desde" id="ph-desde"></p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- Información personal -->
+      <div class="card">
+        <h2 class="card-title">Información personal</h2>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="p-nombre" placeholder="Juan">
+        </div>
+        <div class="form-group">
+          <label>Apellido</label>
+          <input type="text" id="p-apellido" placeholder="Pérez">
+        </div>
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" id="p-correo" placeholder="juan@ejemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Fecha de nacimiento</label>
+          <input type="date" id="p-nacimiento">
+        </div>
+        <div class="form-group">
+          <label>Divisa</label>
+          <select id="p-moneda">
+            <option value="MXN">MXN — Peso mexicano</option>
+            <option value="USD">USD — Dólar americano</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="COP">COP — Peso colombiano</option>
+            <option value="ARS">ARS — Peso argentino</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Color de avatar</label>
+          <div class="color-picker" id="color-picker"></div>
+        </div>
+
+        <button class="btn-primary" onclick="guardarPerfil()">Guardar cambios</button>
+      </div>
+
+      <!-- Cambiar contraseña -->
+      <div class="card">
+        <h2 class="card-title">Cambiar contraseña</h2>
+
+        <div class="form-group">
+          <label>Contraseña actual</label>
+          <input type="password" id="p-clave-actual" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input type="password" id="p-clave-nueva" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nueva contraseña</label>
+          <input type="password" id="p-clave-nueva2" placeholder="••••••••" autocomplete="new-password">
+        </div>
+
+        <button class="btn-primary" onclick="cambiarPassword()">Cambiar contraseña</button>
+      </div>
+
+    </div>
+
+    <!-- Zona de sesión -->
+    <div class="card" style="border:1px solid rgba(239,68,68,0.25)">
+      <h2 class="card-title" style="color:#ef4444">Sesión</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+        Al cerrar sesión se eliminará tu acceso local. Necesitarás ingresar tus credenciales de nuevo.
+      </p>
+      <button class="btn-danger" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/toast.js"></script>
+  <script src="/static/js/navbar.js"></script>
+
+  <script>
+    const COLORES = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+    let _colorSeleccionado = '#6366f1';
+
+    function _iniciales(nombre, apellido, username) {
+      if (nombre && apellido) return (nombre[0] + apellido[0]).toUpperCase();
+      if (nombre) return nombre[0].toUpperCase();
+      return username ? username[0].toUpperCase() : '?';
+    }
+
+    function _renderColorPicker(colorActual) {
+      _colorSeleccionado = colorActual || '#6366f1';
+      const picker = document.getElementById('color-picker');
+      picker.innerHTML = COLORES.map(c => `
+        <button class="color-swatch ${c === _colorSeleccionado ? 'active' : ''}"
+          style="background:${c}"
+          onclick="seleccionarColor('${c}')"
+          title="${c}"></button>
+      `).join('');
+    }
+
+    function seleccionarColor(color) {
+      _colorSeleccionado = color;
+      document.querySelectorAll('.color-swatch').forEach(b => {
+        b.classList.toggle('active', b.style.background === color || b.style.backgroundColor === color);
+      });
+      const av = document.getElementById('avatar-grande');
+      if (av) av.style.background = color;
+    }
+
+    async function cargarPerfil() {
+      const perfil = await get('/api/auth/me');
+      if (!perfil) return;
+
+      localStorage.setItem('finanzas_perfil', JSON.stringify(perfil));
+
+      const nombre   = perfil.nombre   || '';
+      const apellido = perfil.apellido || '';
+      const full     = [nombre, apellido].filter(Boolean).join(' ') || perfil.username;
+
+      document.getElementById('ph-nombre').textContent   = full;
+      document.getElementById('ph-username').textContent = '@' + perfil.username;
+      if (perfil.creado_en) {
+        const d = new Date(perfil.creado_en);
+        document.getElementById('ph-desde').textContent =
+          'Miembro desde ' + d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+      }
+
+      const av = document.getElementById('avatar-grande');
+      av.textContent = _iniciales(perfil.nombre, perfil.apellido, perfil.username);
+      av.style.background = perfil.avatar_color || '#6366f1';
+
+      document.getElementById('p-nombre').value    = perfil.nombre    || '';
+      document.getElementById('p-apellido').value  = perfil.apellido  || '';
+      document.getElementById('p-correo').value    = perfil.correo    || '';
+      document.getElementById('p-nacimiento').value = perfil.fecha_nacimiento || '';
+      document.getElementById('p-moneda').value    = perfil.moneda    || 'MXN';
+
+      _renderColorPicker(perfil.avatar_color || '#6366f1');
+    }
+
+    async function guardarPerfil() {
+      const body = {
+        nombre:           document.getElementById('p-nombre').value.trim()    || null,
+        apellido:         document.getElementById('p-apellido').value.trim()  || null,
+        correo:           document.getElementById('p-correo').value.trim()    || null,
+        fecha_nacimiento: document.getElementById('p-nacimiento').value       || null,
+        moneda:           document.getElementById('p-moneda').value,
+        avatar_color:     _colorSeleccionado,
+      };
+      try {
+        await patch('/api/auth/me', body);
+        localStorage.removeItem('finanzas_perfil');
+        toast('Perfil actualizado', 'ok');
+        await cargarPerfil();
+      } catch(e) {
+        toast(e.message || 'Error al guardar', 'err');
+      }
+    }
+
+    async function cambiarPassword() {
+      const actual  = document.getElementById('p-clave-actual').value;
+      const nueva   = document.getElementById('p-clave-nueva').value;
+      const nueva2  = document.getElementById('p-clave-nueva2').value;
+
+      if (!actual || !nueva) { toast('Completa todos los campos', 'err'); return; }
+      if (nueva !== nueva2)  { toast('Las contraseñas nuevas no coinciden', 'err'); return; }
+      if (nueva.length < 4)  { toast('La nueva contraseña debe tener al menos 4 caracteres', 'err'); return; }
+
+      try {
+        await patch('/api/auth/password', { clave_actual: actual, clave_nueva: nueva });
+        toast('Contraseña cambiada correctamente', 'ok');
+        document.getElementById('p-clave-actual').value  = '';
+        document.getElementById('p-clave-nueva').value   = '';
+        document.getElementById('p-clave-nueva2').value  = '';
+      } catch(e) {
+        toast(e.message || 'Error al cambiar contraseña', 'err');
+      }
+    }
+
+    cargarPerfil();
+  </script>
+
+</body>
+</html>
