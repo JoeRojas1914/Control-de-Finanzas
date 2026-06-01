@@ -68,6 +68,57 @@ html.dark .metric-card[data-color="purple"] { background: rgba(139,92,246,0.08);
   margin-bottom: 20px;
 }
 
+/* ── Dashboard tabs ─────────────────────────────────────────── */
+.dash-tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 5px;
+  margin-bottom: 16px;
+}
+
+.dash-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dash-tab.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.dash-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
+
+/* ── Selector de período ─────────────────────────────────────── */
+.dash-periodo-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.periodo-select {
+  width: auto !important;
+  padding: 5px 10px !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ── Configuración 2 columnas ───────────────────────────────── */
 .conf-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

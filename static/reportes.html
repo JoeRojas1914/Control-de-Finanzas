@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reportes</title>
+  <title>Dashboard — Finanzas</title>
   <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -13,8 +13,8 @@
 
   <main class="container">
 
-    <!-- KPIs generales -->
-    <div class="metrics-grid">
+    <!-- KPIs — 3 columnas forzadas (2 filas de 3) -->
+    <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="metric-card" data-color="blue">
         <p class="metric-label">Patrimonio total</p>
         <p class="metric-value" id="kpi-patrimonio">—</p>
@@ -64,60 +64,100 @@
       </div>
     </div>
 
-    <!-- Gráficas fila 1 -->
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Gastos por categoría — este mes</h2>
-        <canvas id="grafica-categorias" height="260"></canvas>
-        <div id="sin-gastos" style="text-align:center;color:#999;padding:40px;display:none">
-          Sin gastos registrados este mes
+    <!-- Patrimonio — siempre visible -->
+    <div class="card">
+      <h2 class="card-title">Evolución del patrimonio — últimos 30 días</h2>
+      <canvas id="grafica-patrimonio" height="110"></canvas>
+    </div>
+
+    <!-- Tab nav -->
+    <div class="dash-tab-bar">
+      <button class="dash-tab active" id="tab-btn-mensual" onclick="switchTab('mensual')">Resumen mensual</button>
+      <button class="dash-tab" id="tab-btn-anual" onclick="switchTab('anual')">Resumen anual</button>
+    </div>
+
+    <!-- ── TAB MENSUAL ──────────────────────────────────────── -->
+    <div id="tab-mensual">
+
+      <!-- Selector de mes -->
+      <div class="dash-periodo-bar">
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Período</span>
+        <select id="mes-selector" class="periodo-select" onchange="cambiarMes()"></select>
+      </div>
+
+      <!-- Gastos por categoría + Rendimientos -->
+      <div class="grid-2">
+        <div class="card">
+          <h2 class="card-title" id="titulo-categorias">Gastos por categoría</h2>
+          <canvas id="grafica-categorias" height="260"></canvas>
+          <div id="sin-gastos" style="text-align:center;color:var(--text-hint);padding:40px;display:none">
+            Sin gastos registrados este período
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="card-title">Rendimientos acumulados</h2>
+          <div id="tabla-rendimientos">Cargando...</div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Rendimientos acumulados — este mes</h2>
-        <div id="tabla-rendimientos">Cargando...</div>
-      </div>
-    </div>
-
-    <!-- Ingresos vs Gastos -->
-    <div class="card">
-      <h2 class="card-title">Ingresos vs gastos — últimos 6 meses</h2>
-      <canvas id="grafica-ingresos-gastos" height="120"></canvas>
-    </div>
-
-    <!-- Presupuestos -->
-    <div class="card" id="card-presupuestos" style="display:none">
-      <h2 class="card-title">Presupuestos — este mes</h2>
-      <div id="lista-pres-reportes">Cargando...</div>
-    </div>
-
-    <!-- Metas de ahorro -->
-    <div class="card" id="card-metas" style="display:none">
-      <h2 class="card-title">Metas de ahorro</h2>
-      <div id="lista-metas-dash"></div>
-    </div>
-
-    <!-- Top gastos + estadísticas -->
-    <div class="grid-2">
-
-      <div class="card">
-        <h2 class="card-title">Top 5 mayores gastos — este mes</h2>
-        <div id="top-gastos">Cargando...</div>
+      <!-- Top gastos + Estadísticas -->
+      <div class="grid-2">
+        <div class="card">
+          <h2 class="card-title" id="titulo-top-gastos">Top 5 mayores gastos</h2>
+          <div id="top-gastos">Cargando...</div>
+        </div>
+        <div class="card">
+          <h2 class="card-title">Estadísticas del período</h2>
+          <div id="stats-extra">Cargando...</div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Estadísticas del mes</h2>
-        <div id="stats-extra">Cargando...</div>
+      <!-- Presupuestos -->
+      <div class="card" id="card-presupuestos" style="display:none">
+        <h2 class="card-title">Presupuestos — mes actual</h2>
+        <div id="lista-pres-reportes">Cargando...</div>
       </div>
 
-    </div>
+      <!-- Metas -->
+      <div class="card" id="card-metas" style="display:none">
+        <h2 class="card-title">Metas de ahorro</h2>
+        <div id="lista-metas-dash"></div>
+      </div>
 
-    <!-- Patrimonio -->
-    <div class="card">
-      <h2 class="card-title">Evolución del patrimonio — últimos 30 días</h2>
-      <canvas id="grafica-patrimonio" height="120"></canvas>
-    </div>
+    </div><!-- /tab-mensual -->
+
+    <!-- ── TAB ANUAL ────────────────────────────────────────── -->
+    <div id="tab-anual" style="display:none">
+
+      <!-- Selector de año -->
+      <div class="dash-periodo-bar">
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Año</span>
+        <select id="año-selector" class="periodo-select" onchange="cambiarAño()"></select>
+      </div>
+
+      <!-- Resumen anual KPIs -->
+      <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+        <div class="metric-card" data-color="green">
+          <p class="metric-label">Total ingresos del año</p>
+          <p class="metric-value green" id="anual-ingresos">—</p>
+        </div>
+        <div class="metric-card" data-color="red">
+          <p class="metric-label">Total gastos del año</p>
+          <p class="metric-value red" id="anual-gastos">—</p>
+        </div>
+        <div class="metric-card" data-color="purple">
+          <p class="metric-label">Balance del año</p>
+          <p class="metric-value" id="anual-balance">—</p>
+        </div>
+      </div>
+
+      <!-- Gráfica ingresos vs gastos -->
+      <div class="card">
+        <h2 class="card-title" id="titulo-ing-gastos">Ingresos vs gastos</h2>
+        <canvas id="grafica-ingresos-gastos" height="120"></canvas>
+      </div>
+
+    </div><!-- /tab-anual -->
 
   </main>
 
