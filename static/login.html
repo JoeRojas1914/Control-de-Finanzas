@@ -14,42 +14,138 @@
   <div class="login-wrap">
     <div class="card login-card">
 
-      <h1 class="login-titulo" id="login-titulo">FINANZAS</h1>
-      <p class="login-sub" id="login-sub">Inicia sesión para continuar</p>
+      <!-- ── MODO LOGIN ─────────────────────────────────────── -->
+      <div id="vista-login">
+        <h1 class="login-titulo">FINANZAS</h1>
+        <p class="login-sub">Inicia sesión para continuar</p>
 
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" id="usuario" placeholder="tu_usuario" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="clave" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div class="form-group" id="grupo-confirmar" style="display:none">
-        <label>Confirmar contraseña</label>
-        <input type="password" id="clave2" placeholder="••••••••" autocomplete="new-password">
+        <div class="form-group">
+          <label>Usuario o correo</label>
+          <input type="text" id="l-usuario" placeholder="usuario o correo@ejemplo.com" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="l-clave" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button class="btn-primary" id="btn-login" onclick="iniciarSesion()">Entrar</button>
+        <p class="login-error" id="login-error"></p>
+
+        <p class="login-toggle-txt">
+          ¿No tienes cuenta?
+          <button class="login-link" onclick="irAPaso(1)">Crear una</button>
+        </p>
       </div>
 
-      <button class="btn-primary" id="btn-accion" onclick="accion()">Entrar</button>
-      <p class="login-error" id="error-msg"></p>
+      <!-- ── MODO REGISTRO ──────────────────────────────────── -->
+      <div id="vista-registro" style="display:none">
 
-      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted)">
-        <span id="texto-toggle"></span>
-        <button id="btn-toggle" onclick="toggleModo()"
-          style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;padding:0;margin-left:4px"></button>
-      </p>
+        <!-- Paso 1: Credenciales -->
+        <div id="paso-1">
+          <div class="reg-pasos">
+            <span class="reg-dot active"></span>
+            <span class="reg-dot"></span>
+            <span class="reg-dot"></span>
+          </div>
+          <h1 class="login-titulo">Crear cuenta</h1>
+          <p class="login-sub">Paso 1 de 3 · Credenciales de acceso</p>
+
+          <div class="form-group">
+            <label>Usuario</label>
+            <input type="text" id="r-usuario" placeholder="mi_usuario" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="r-clave" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="r-clave2" placeholder="••••••••" autocomplete="new-password">
+          </div>
+
+          <button class="btn-primary" onclick="validarPaso1()">Continuar →</button>
+          <p class="login-error" id="error-p1"></p>
+
+          <p class="login-toggle-txt">
+            ¿Ya tienes cuenta?
+            <button class="login-link" onclick="irALogin()">Iniciar sesión</button>
+          </p>
+        </div>
+
+        <!-- Paso 2: Datos personales -->
+        <div id="paso-2" style="display:none">
+          <div class="reg-pasos">
+            <span class="reg-dot active"></span>
+            <span class="reg-dot active"></span>
+            <span class="reg-dot"></span>
+          </div>
+          <h1 class="login-titulo">Datos personales</h1>
+          <p class="login-sub">Paso 2 de 3 · Información personal</p>
+
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="r-nombre" placeholder="Juan" autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" id="r-apellido" placeholder="Pérez" autocomplete="family-name">
+          </div>
+          <div class="form-group">
+            <label>Correo electrónico</label>
+            <input type="email" id="r-correo" placeholder="juan@ejemplo.com" autocomplete="email">
+          </div>
+
+          <button class="btn-primary" onclick="validarPaso2()">Continuar →</button>
+          <p class="login-error" id="error-p2"></p>
+        </div>
+
+        <!-- Paso 3: Preferencias -->
+        <div id="paso-3" style="display:none">
+          <div class="reg-pasos">
+            <span class="reg-dot active"></span>
+            <span class="reg-dot active"></span>
+            <span class="reg-dot active"></span>
+          </div>
+          <h1 class="login-titulo">Preferencias</h1>
+          <p class="login-sub">Paso 3 de 3 · Configuración inicial</p>
+
+          <div class="form-group">
+            <label>Fecha de nacimiento</label>
+            <input type="date" id="r-nacimiento">
+          </div>
+          <div class="form-group">
+            <label>Divisa</label>
+            <select id="r-moneda">
+              <option value="MXN">MXN — Peso mexicano</option>
+              <option value="USD">USD — Dólar americano</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="COP">COP — Peso colombiano</option>
+              <option value="ARS">ARS — Peso argentino</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Color de avatar</label>
+            <div class="color-picker" id="color-picker-reg"></div>
+          </div>
+
+          <button class="btn-primary" id="btn-registro" onclick="registrar()">Crear cuenta</button>
+          <p class="login-error" id="error-p3"></p>
+        </div>
+
+      </div><!-- /vista-registro -->
 
     </div>
   </div>
 
   <script>
-    let modoRegistro = false;
+    const COLORES_REG = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+    let _colorReg = '#6366f1';
 
+    // ── Tema ─────────────────────────────────────────────────
     function actualizarBtn() {
       const oscuro = localStorage.getItem('tema') === 'obscuro';
       document.getElementById('btn-tema').textContent = oscuro ? 'Claro' : 'Obscuro';
     }
-
     function toggleTema() {
       const oscuro = localStorage.getItem('tema') === 'obscuro';
       localStorage.setItem('tema', oscuro ? 'claro' : 'obscuro');
@@ -57,53 +153,131 @@
       actualizarBtn();
     }
 
-    function toggleModo() {
-      modoRegistro = !modoRegistro;
-      document.getElementById('login-titulo').textContent = modoRegistro ? 'CREAR CUENTA' : 'FINANZAS';
-      document.getElementById('login-sub').textContent    = modoRegistro
-        ? 'Crea tu cuenta para empezar'
-        : 'Inicia sesión para continuar';
-      document.getElementById('grupo-confirmar').style.display = modoRegistro ? '' : 'none';
-      document.getElementById('btn-accion').textContent  = modoRegistro ? 'Crear cuenta' : 'Entrar';
-      document.getElementById('texto-toggle').textContent = modoRegistro ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
-      document.getElementById('btn-toggle').textContent   = modoRegistro ? 'Iniciar sesión' : 'Crear una';
-      document.getElementById('error-msg').textContent    = '';
-      document.getElementById('clave2').value = '';
+    // ── Navegación entre vistas ───────────────────────────────
+    function irALogin() {
+      document.getElementById('vista-login').style.display    = '';
+      document.getElementById('vista-registro').style.display = 'none';
+      document.getElementById('login-error').textContent = '';
     }
 
-    function _setTextos() {
-      document.getElementById('texto-toggle').textContent = '¿No tienes cuenta?';
-      document.getElementById('btn-toggle').textContent   = 'Crear una';
+    function irAPaso(n) {
+      document.getElementById('vista-login').style.display    = 'none';
+      document.getElementById('vista-registro').style.display = '';
+      [1, 2, 3].forEach(i => {
+        document.getElementById('paso-' + i).style.display = i === n ? '' : 'none';
+      });
+      if (n === 3) _renderColorPicker();
     }
 
-    actualizarBtn();
-    _setTextos();
-
-    // Auto-login si ya hay credenciales guardadas
-    const authGuardado = localStorage.getItem('finanzas_auth');
-    if (authGuardado) {
-      fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
-        .then(r => { if (r.ok) window.location.href = '/static/reportes.html'; });
+    // ── Color picker (paso 3) ─────────────────────────────────
+    function _renderColorPicker() {
+      const picker = document.getElementById('color-picker-reg');
+      if (picker.innerHTML) return;
+      picker.innerHTML = COLORES_REG.map(c => `
+        <button class="color-swatch ${c === _colorReg ? 'active' : ''}"
+          style="background:${c}"
+          onclick="seleccionarColorReg('${c}')"
+          title="${c}"></button>
+      `).join('');
     }
 
-    document.getElementById('clave').addEventListener('keydown', e => {
-      if (e.key === 'Enter') accion();
-    });
-    document.getElementById('clave2').addEventListener('keydown', e => {
-      if (e.key === 'Enter') accion();
-    });
-
-    async function accion() {
-      modoRegistro ? await registrar() : await iniciarSesion();
+    function seleccionarColorReg(color) {
+      _colorReg = color;
+      document.querySelectorAll('#color-picker-reg .color-swatch').forEach(b => {
+        b.classList.toggle('active', b.style.backgroundColor === color
+          || b.style.background === color);
+      });
     }
 
+    // ── Validación paso 1 ─────────────────────────────────────
+    function validarPaso1() {
+      const usuario = document.getElementById('r-usuario').value.trim();
+      const clave   = document.getElementById('r-clave').value;
+      const clave2  = document.getElementById('r-clave2').value;
+      const err     = document.getElementById('error-p1');
+      err.textContent = '';
+
+      if (!usuario)                        { err.textContent = 'Ingresa un nombre de usuario'; return; }
+      if (!/^[a-z0-9_]+$/i.test(usuario)) { err.textContent = 'Solo letras, números y guión bajo'; return; }
+      if (!clave)                          { err.textContent = 'Ingresa una contraseña'; return; }
+      if (clave.length < 4)               { err.textContent = 'Mínimo 4 caracteres'; return; }
+      if (clave !== clave2)               { err.textContent = 'Las contraseñas no coinciden'; return; }
+
+      irAPaso(2);
+    }
+
+    // ── Validación paso 2 ─────────────────────────────────────
+    function validarPaso2() {
+      const nombre   = document.getElementById('r-nombre').value.trim();
+      const apellido = document.getElementById('r-apellido').value.trim();
+      const correo   = document.getElementById('r-correo').value.trim();
+      const err      = document.getElementById('error-p2');
+      err.textContent = '';
+
+      if (!nombre)   { err.textContent = 'El nombre es obligatorio'; return; }
+      if (!apellido) { err.textContent = 'El apellido es obligatorio'; return; }
+      if (!correo)   { err.textContent = 'El correo es obligatorio'; return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        err.textContent = 'Ingresa un correo válido';
+        return;
+      }
+      irAPaso(3);
+    }
+
+    // ── Registro final ────────────────────────────────────────
+    async function registrar() {
+      const btn = document.getElementById('btn-registro');
+      const err = document.getElementById('error-p3');
+      err.textContent = '';
+
+      const nacimiento = document.getElementById('r-nacimiento').value;
+      if (!nacimiento) { err.textContent = 'La fecha de nacimiento es obligatoria'; return; }
+
+      btn.textContent = 'Creando cuenta...';
+      btn.disabled    = true;
+
+      const usuario = document.getElementById('r-usuario').value.trim().toLowerCase();
+      const clave   = document.getElementById('r-clave').value;
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username:         usuario,
+            password:         clave,
+            nombre:           document.getElementById('r-nombre').value.trim()   || null,
+            apellido:         document.getElementById('r-apellido').value.trim() || null,
+            correo:           document.getElementById('r-correo').value.trim()   || null,
+            fecha_nacimiento: document.getElementById('r-nacimiento').value      || null,
+            moneda:           document.getElementById('r-moneda').value,
+            avatar_color:     _colorReg,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const encoded = btoa(usuario + ':' + clave);
+          localStorage.setItem('finanzas_auth', encoded);
+          window.location.href = '/static/reportes.html';
+        } else {
+          err.textContent = data.detail || 'Error al crear la cuenta';
+        }
+      } catch {
+        err.textContent = 'No se pudo conectar con el servidor';
+      } finally {
+        btn.textContent = 'Crear cuenta';
+        btn.disabled    = false;
+      }
+    }
+
+    // ── Login ─────────────────────────────────────────────────
     async function iniciarSesion() {
-      const usuario  = document.getElementById('usuario').value.trim();
-      const clave    = document.getElementById('clave').value;
-      const errorMsg = document.getElementById('error-msg');
-      const btn      = document.getElementById('btn-accion');
+      const usuario  = document.getElementById('l-usuario').value.trim();
+      const clave    = document.getElementById('l-clave').value;
+      const errorMsg = document.getElementById('login-error');
+      const btn      = document.getElementById('btn-login');
 
-      if (!usuario || !clave) { errorMsg.textContent = 'Ingresa usuario y contraseña'; return; }
+      if (!usuario || !clave) { errorMsg.textContent = 'Ingresa usuario/correo y contraseña'; return; }
 
       btn.textContent = 'Verificando...';
       btn.disabled    = true;
@@ -116,7 +290,7 @@
           localStorage.setItem('finanzas_auth', encoded);
           window.location.href = '/static/reportes.html';
         } else {
-          errorMsg.textContent = 'Usuario o contraseña incorrectos';
+          errorMsg.textContent = 'Usuario, correo o contraseña incorrectos';
         }
       } catch {
         errorMsg.textContent = 'No se pudo conectar con el servidor';
@@ -126,43 +300,21 @@
       }
     }
 
-    async function registrar() {
-      const usuario  = document.getElementById('usuario').value.trim().toLowerCase();
-      const clave    = document.getElementById('clave').value;
-      const clave2   = document.getElementById('clave2').value;
-      const errorMsg = document.getElementById('error-msg');
-      const btn      = document.getElementById('btn-accion');
+    // ── Init ──────────────────────────────────────────────────
+    actualizarBtn();
 
-      if (!usuario || !clave) { errorMsg.textContent = 'Completa todos los campos'; return; }
-      if (clave !== clave2)   { errorMsg.textContent = 'Las contraseñas no coinciden'; return; }
-      if (clave.length < 4)   { errorMsg.textContent = 'La contraseña debe tener al menos 4 caracteres'; return; }
-
-      btn.textContent = 'Creando cuenta...';
-      btn.disabled    = true;
-      errorMsg.textContent = '';
-
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: usuario, password: clave }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          // Login automático tras registro
-          const encoded = btoa(usuario + ':' + clave);
-          localStorage.setItem('finanzas_auth', encoded);
-          window.location.href = '/static/reportes.html';
-        } else {
-          errorMsg.textContent = data.detail || 'Error al crear la cuenta';
-        }
-      } catch {
-        errorMsg.textContent = 'No se pudo conectar con el servidor';
-      } finally {
-        btn.textContent = 'Crear cuenta';
-        btn.disabled    = false;
-      }
+    const authGuardado = localStorage.getItem('finanzas_auth');
+    if (authGuardado) {
+      fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
+        .then(r => { if (r.ok) window.location.href = '/static/reportes.html'; });
     }
+
+    document.getElementById('l-clave').addEventListener('keydown', e => {
+      if (e.key === 'Enter') iniciarSesion();
+    });
+    document.getElementById('r-clave2').addEventListener('keydown', e => {
+      if (e.key === 'Enter') validarPaso1();
+    });
   </script>
 
 </body>

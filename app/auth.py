@@ -29,7 +29,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Usuario
     except Exception:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    user = db.query(Usuario).filter(Usuario.username == username).first()
+    identifier = username.strip().lower()
+    user = db.query(Usuario).filter(Usuario.username == identifier).first()
+    if not user:
+        user = db.query(Usuario).filter(Usuario.correo == identifier).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 

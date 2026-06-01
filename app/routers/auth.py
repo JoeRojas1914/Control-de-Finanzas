@@ -11,8 +11,14 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 class RegisterRequest(BaseModel):
-    username: str
-    password: str
+    username:         str
+    password:         str
+    nombre:           str
+    apellido:         str
+    correo:           str
+    fecha_nacimiento: str
+    moneda:           Optional[str] = "MXN"
+    avatar_color:     Optional[str] = "#6366f1"
 
 
 class PerfilUpdate(BaseModel):
@@ -36,9 +42,25 @@ def register(datos: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=422, detail="Usuario y contraseña son obligatorios")
     if len(datos.password) < 4:
         raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 4 caracteres")
+    if not datos.nombre.strip() or not datos.apellido.strip():
+        raise HTTPException(status_code=422, detail="Nombre y apellido son obligatorios")
+    if not datos.correo.strip() or not datos.fecha_nacimiento:
+        raise HTTPException(status_code=422, detail="Correo y fecha de nacimiento son obligatorios")
     if db.query(Usuario).filter(Usuario.username == username).first():
         raise HTTPException(status_code=400, detail="Ese nombre de usuario ya existe")
-    user = Usuario(username=username, password_hash=hash_password(datos.password))
+    correo = datos.correo.strip().lower()
+    if correo and db.query(Usuario).filter(Usuario.correo == correo).first():
+        raise HTTPException(status_code=400, detail="Ese correo ya está registrado")
+    user = Usuario(
+        username=username,
+        password_hash=hash_password(datos.password),
+        nombre=datos.nombre.strip() if datos.nombre else None,
+        apellido=datos.apellido.strip() if datos.apellido else None,
+        correo=correo,
+        fecha_nacimiento=datetime.fromisoformat(datos.fecha_nacimiento) if datos.fecha_nacimiento else None,
+        moneda=datos.moneda or "MXN",
+        avatar_color=datos.avatar_color or "#6366f1",
+    )
     db.add(user)
     db.commit()
     return {"ok": True, "username": username}

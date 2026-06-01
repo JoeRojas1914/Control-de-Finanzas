@@ -4,10 +4,12 @@ from typing import Optional
 from app.models import TipoCuenta
 
 class CuentaBase(BaseModel):
-    nombre  : str
-    tipo    : TipoCuenta
-    saldo   : float
-    limite  : Optional[float] = None
+    nombre    : str
+    tipo      : TipoCuenta
+    saldo     : float
+    limite    : Optional[float] = None
+    dia_corte : Optional[int]   = None
+    dia_pago  : Optional[int]   = None
 
 class CuentaCreate(CuentaBase):
     pass

@@ -174,6 +174,12 @@ function renderDetalleCredito(c, transacciones) {
       </div>
     </div>
 
+    ${(c.dia_corte || c.dia_pago) ? `
+    <div class="card" style="margin-bottom:16px;display:flex;gap:32px;align-items:center">
+      ${c.dia_corte ? `<div><p class="metric-label">Fecha de corte</p><p style="font-size:15px;font-weight:600;color:var(--text)">Día ${c.dia_corte} de cada mes</p></div>` : ''}
+      ${c.dia_pago  ? `<div><p class="metric-label">Límite de pago</p><p style="font-size:15px;font-weight:600;color:var(--text)">Día ${c.dia_pago} de cada mes</p></div>` : ''}
+    </div>` : ''}
+
     <div class="card">
       <h2 class="card-title">Movimientos recientes</h2>
       ${renderTablaTransacciones(transacciones)}
@@ -241,6 +247,8 @@ function cerrarModalNueva() {
   document.getElementById('nueva-nombre').value = '';
   document.getElementById('nueva-saldo').value  = '';
   document.getElementById('nueva-limite').value = '';
+  document.getElementById('nueva-corte').value  = '';
+  document.getElementById('nueva-pago').value   = '';
 }
 
 document.getElementById('modal-nueva').addEventListener('click', function(e) {
@@ -248,20 +256,24 @@ document.getElementById('modal-nueva').addEventListener('click', function(e) {
 });
 
 document.getElementById('nueva-tipo').addEventListener('change', function() {
-  document.getElementById('grupo-limite').style.display =
-    this.value === 'credito' ? 'block' : 'none';
+  const esCredito = this.value === 'credito';
+  ['grupo-limite', 'grupo-corte', 'grupo-pago'].forEach(id => {
+    document.getElementById(id).style.display = esCredito ? 'block' : 'none';
+  });
 });
 
 async function agregarCuenta() {
-  const nombre = document.getElementById('nueva-nombre').value.trim();
-  const tipo   = document.getElementById('nueva-tipo').value;
-  const saldo  = parseFloat(document.getElementById('nueva-saldo').value) || 0;
-  const limite = parseFloat(document.getElementById('nueva-limite').value) || null;
+  const nombre    = document.getElementById('nueva-nombre').value.trim();
+  const tipo      = document.getElementById('nueva-tipo').value;
+  const saldo     = parseFloat(document.getElementById('nueva-saldo').value) || 0;
+  const limite    = parseFloat(document.getElementById('nueva-limite').value) || null;
+  const dia_corte = parseInt(document.getElementById('nueva-corte').value) || null;
+  const dia_pago  = parseInt(document.getElementById('nueva-pago').value)  || null;
 
   if (!nombre) { toast('El nombre de la cuenta es obligatorio', 'err'); return; }
 
   try {
-    const nueva = await post('/api/cuentas/', { nombre, tipo, saldo, limite });
+    const nueva = await post('/api/cuentas/', { nombre, tipo, saldo, limite, dia_corte, dia_pago });
     cerrarModalNueva();
     toast(`Cuenta "${nombre}" creada`, 'ok');
     todasCuentas = await get('/api/cuentas/');
@@ -281,13 +293,14 @@ function abrirModalEditar() {
   document.getElementById('editar-id').value     = c.id;
   document.getElementById('editar-nombre').value = c.nombre;
 
-  const esCredito   = c.tipo === 'credito';
-  const grupoLimite = document.getElementById('editar-grupo-limite');
+  const esCredito = c.tipo === 'credito';
+  ['editar-grupo-limite', 'editar-grupo-corte', 'editar-grupo-pago'].forEach(id => {
+    document.getElementById(id).style.display = esCredito ? 'block' : 'none';
+  });
   if (esCredito) {
-    grupoLimite.style.display = 'block';
     document.getElementById('editar-limite').value = c.limite || 0;
-  } else {
-    grupoLimite.style.display = 'none';
+    document.getElementById('editar-corte').value  = c.dia_corte || '';
+    document.getElementById('editar-pago').value   = c.dia_pago  || '';
   }
 
   document.getElementById('editar-saldo-label').textContent = esCredito ? 'Deuda actual ($)' : 'Saldo actual ($)';
@@ -317,10 +330,12 @@ async function guardarEdicion() {
       promesas.push(patch(`/api/cuentas/${id}/nombre`, { nombre }));
     }
     if (c.tipo === 'credito') {
-      const limite = parseFloat(document.getElementById('editar-limite').value) || 0;
-      if (limite !== c.limite) {
-        promesas.push(patch(`/api/cuentas/${id}/limite`, { limite }));
-      }
+      const limite    = parseFloat(document.getElementById('editar-limite').value) || 0;
+      const dia_corte = parseInt(document.getElementById('editar-corte').value) || null;
+      const dia_pago  = parseInt(document.getElementById('editar-pago').value)  || null;
+      if (limite !== c.limite)       promesas.push(patch(`/api/cuentas/${id}/limite`, { limite }));
+      if (dia_corte !== c.dia_corte || dia_pago !== c.dia_pago)
+        promesas.push(patch(`/api/cuentas/${id}/fechas-tc`, { dia_corte, dia_pago }));
     }
     const saldoInput = parseFloat(document.getElementById('editar-saldo').value) || 0;
     const saldo      = c.tipo === 'credito' ? -Math.abs(saldoInput) : saldoInput;

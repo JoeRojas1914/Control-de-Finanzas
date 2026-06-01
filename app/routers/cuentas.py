@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.models import Cuenta, Usuario
 from app.schemas import CuentaCreate, CuentaOut, CuentaUpdate, LimiteUpdate, NombreUpdate
@@ -56,6 +58,22 @@ def actualizar_limite(cuenta_id: int, datos: LimiteUpdate, db: Session = Depends
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     cuenta.limite = datos.limite
+    db.commit()
+    db.refresh(cuenta)
+    return cuenta
+
+
+class FechasTCUpdate(BaseModel):
+    dia_corte: Optional[int] = None
+    dia_pago:  Optional[int] = None
+
+@router.patch("/{cuenta_id}/fechas-tc", response_model=CuentaOut)
+def actualizar_fechas_tc(cuenta_id: int, datos: FechasTCUpdate, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    cuenta = db.query(Cuenta).filter(Cuenta.id == cuenta_id, Cuenta.usuario_id == user.id).first()
+    if not cuenta:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    cuenta.dia_corte = datos.dia_corte
+    cuenta.dia_pago  = datos.dia_pago
     db.commit()
     db.refresh(cuenta)
     return cuenta

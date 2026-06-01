@@ -33,6 +33,8 @@ class Cuenta(Base):
     tipo        = Column(Enum(TipoCuenta), nullable=False)
     saldo       = Column(Float, default=0.0)
     limite      = Column(Float, nullable=True)
+    dia_corte   = Column(Integer, nullable=True)
+    dia_pago    = Column(Integer, nullable=True)
     creada_en   = Column(DateTime, default=datetime.now)
     usuario_id  = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
 

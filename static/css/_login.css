@@ -27,3 +27,41 @@
 }
 
 .tema-btn:hover { color: var(--text); }
+
+/* ── Registro multi-paso ─────────────────────────────────────── */
+.reg-pasos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.reg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+}
+
+.reg-dot.active { background: var(--accent); }
+
+.login-toggle-txt {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.login-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.login-link:hover { text-decoration: underline; }
