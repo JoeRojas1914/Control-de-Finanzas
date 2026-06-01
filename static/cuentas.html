@@ -48,21 +48,25 @@
         <label>Tipo</label>
         <select id="nueva-tipo">
           <option value="debito">Débito</option>
-          <option value="credito">Crédito</option>
+          <option value="credito">Crédito / Tarjeta</option>
         </select>
       </div>
-      <div class="form-group" id="grupo-limite" style="display:none">
+      <div id="grupo-credito-campos" style="display:none">
+      <div class="form-group" id="grupo-limite">
         <label>Límite de crédito ($)</label>
         <input type="number" id="nueva-limite" step="0.01" placeholder="ej: 20000">
       </div>
-      <div class="form-group" id="grupo-corte" style="display:none">
-        <label>Día de corte</label>
-        <input type="number" id="nueva-corte" min="1" max="31" placeholder="ej: 15">
+      <div class="form-group" id="grupo-corte">
+        <label>Día de corte <span style="color:var(--text-muted);font-weight:400">(1–30)</span></label>
+        <input type="number" id="nueva-corte" min="1" max="30" placeholder="ej: 15"
+          oninput="if(this.value>30)this.value=30;if(this.value<1&&this.value!='')this.value=1">
       </div>
-      <div class="form-group" id="grupo-pago" style="display:none">
-        <label>Día límite de pago</label>
-        <input type="number" id="nueva-pago" min="1" max="31" placeholder="ej: 10">
+      <div class="form-group" id="grupo-pago">
+        <label>Día límite de pago <span style="color:var(--text-muted);font-weight:400">(1–30)</span></label>
+        <input type="number" id="nueva-pago" min="1" max="30" placeholder="ej: 10"
+          oninput="if(this.value>30)this.value=30;if(this.value<1&&this.value!='')this.value=1">
       </div>
+      </div><!-- /grupo-credito-campos -->
       <div class="form-group">
         <label>Saldo inicial ($)</label>
         <input type="number" id="nueva-saldo" step="0.01" placeholder="ej: 5000">
@@ -83,17 +87,21 @@
         <label>Nombre</label>
         <input type="text" id="editar-nombre">
       </div>
-      <div class="form-group" id="editar-grupo-limite" style="display:none">
-        <label>Límite de crédito ($)</label>
-        <input type="number" id="editar-limite" step="0.01">
-      </div>
-      <div class="form-group" id="editar-grupo-corte" style="display:none">
-        <label>Día de corte</label>
-        <input type="number" id="editar-corte" min="1" max="31" placeholder="ej: 15">
-      </div>
-      <div class="form-group" id="editar-grupo-pago" style="display:none">
-        <label>Día límite de pago</label>
-        <input type="number" id="editar-pago" min="1" max="31" placeholder="ej: 10">
+      <div id="editar-grupo-credito" style="display:none">
+        <div class="form-group">
+          <label>Límite de crédito ($)</label>
+          <input type="number" id="editar-limite" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Día de corte <span style="color:var(--text-muted);font-weight:400">(1–30)</span></label>
+          <input type="number" id="editar-corte" min="1" max="30" placeholder="ej: 15"
+            oninput="if(this.value>30)this.value=30;if(this.value<1&&this.value!='')this.value=1">
+        </div>
+        <div class="form-group">
+          <label>Día límite de pago <span style="color:var(--text-muted);font-weight:400">(1–30)</span></label>
+          <input type="number" id="editar-pago" min="1" max="30" placeholder="ej: 10"
+            oninput="if(this.value>30)this.value=30;if(this.value<1&&this.value!='')this.value=1">
+        </div>
       </div>
       <div class="form-group">
         <label id="editar-saldo-label">Saldo actual ($)</label>

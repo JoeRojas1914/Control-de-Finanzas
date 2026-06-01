@@ -14,6 +14,27 @@ from app.routers import (
 
 models.Base.metadata.create_all(bind=engine)
 
+# Migraciones manuales para columnas nuevas en tablas existentes
+from sqlalchemy import text
+def _migrar():
+    columnas = [
+        ("cuentas",   "dia_corte",        "INTEGER"),
+        ("cuentas",   "dia_pago",         "INTEGER"),
+        ("usuarios",  "nombre",           "VARCHAR"),
+        ("usuarios",  "apellido",         "VARCHAR"),
+        ("usuarios",  "correo",           "VARCHAR"),
+        ("usuarios",  "fecha_nacimiento", "DATETIME"),
+        ("usuarios",  "moneda",           "VARCHAR"),
+        ("usuarios",  "avatar_color",     "VARCHAR"),
+    ]
+    with engine.begin() as conn:
+        for tabla, col, tipo in columnas:
+            try:
+                conn.execute(text(f"ALTER TABLE {tabla} ADD COLUMN {col} {tipo}"))
+            except Exception:
+                pass  # columna ya existe
+_migrar()
+
 app = FastAPI(title="Control de Finanzas")
 
 # /api/auth/register es público — los demás endpoints verifican usuario dentro del router

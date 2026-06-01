@@ -72,6 +72,9 @@ def actualizar_fechas_tc(cuenta_id: int, datos: FechasTCUpdate, db: Session = De
     cuenta = db.query(Cuenta).filter(Cuenta.id == cuenta_id, Cuenta.usuario_id == user.id).first()
     if not cuenta:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    for dia, campo in [(datos.dia_corte, "dia_corte"), (datos.dia_pago, "dia_pago")]:
+        if dia is not None and not (1 <= dia <= 30):
+            raise HTTPException(status_code=422, detail=f"{campo} debe estar entre 1 y 30")
     cuenta.dia_corte = datos.dia_corte
     cuenta.dia_pago  = datos.dia_pago
     db.commit()

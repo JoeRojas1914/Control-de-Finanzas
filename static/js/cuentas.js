@@ -256,10 +256,8 @@ document.getElementById('modal-nueva').addEventListener('click', function(e) {
 });
 
 document.getElementById('nueva-tipo').addEventListener('change', function() {
-  const esCredito = this.value === 'credito';
-  ['grupo-limite', 'grupo-corte', 'grupo-pago'].forEach(id => {
-    document.getElementById(id).style.display = esCredito ? 'block' : 'none';
-  });
+  document.getElementById('grupo-credito-campos').style.display =
+    this.value === 'credito' ? 'block' : 'none';
 });
 
 async function agregarCuenta() {
@@ -294,11 +292,9 @@ function abrirModalEditar() {
   document.getElementById('editar-nombre').value = c.nombre;
 
   const esCredito = c.tipo === 'credito';
-  ['editar-grupo-limite', 'editar-grupo-corte', 'editar-grupo-pago'].forEach(id => {
-    document.getElementById(id).style.display = esCredito ? 'block' : 'none';
-  });
+  document.getElementById('editar-grupo-credito').style.display = esCredito ? 'block' : 'none';
   if (esCredito) {
-    document.getElementById('editar-limite').value = c.limite || 0;
+    document.getElementById('editar-limite').value = c.limite    || 0;
     document.getElementById('editar-corte').value  = c.dia_corte || '';
     document.getElementById('editar-pago').value   = c.dia_pago  || '';
   }
@@ -331,9 +327,10 @@ async function guardarEdicion() {
     }
     if (c.tipo === 'credito') {
       const limite    = parseFloat(document.getElementById('editar-limite').value) || 0;
-      const dia_corte = parseInt(document.getElementById('editar-corte').value) || null;
-      const dia_pago  = parseInt(document.getElementById('editar-pago').value)  || null;
-      if (limite !== c.limite)       promesas.push(patch(`/api/cuentas/${id}/limite`, { limite }));
+      const dia_corte = parseInt(document.getElementById('editar-corte').value)    || null;
+      const dia_pago  = parseInt(document.getElementById('editar-pago').value)     || null;
+      if (limite !== c.limite)
+        promesas.push(patch(`/api/cuentas/${id}/limite`, { limite }));
       if (dia_corte !== c.dia_corte || dia_pago !== c.dia_pago)
         promesas.push(patch(`/api/cuentas/${id}/fechas-tc`, { dia_corte, dia_pago }));
     }
