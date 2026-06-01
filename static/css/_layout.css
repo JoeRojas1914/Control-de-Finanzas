@@ -69,6 +69,27 @@ html.dark .metric-card[data-color="purple"] { background: rgba(139,92,246,0.08);
   margin-bottom: 20px;
 }
 
+.conf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+  align-items: start;
+  margin-bottom: 0;
+}
+
+.conf-col { display: flex; flex-direction: column; }
+
+.conf-lista {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.conf-lista::-webkit-scrollbar       { width: 4px; }
+.conf-lista::-webkit-scrollbar-track { background: transparent; }
+.conf-lista::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
 /* ── Cards ──────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);

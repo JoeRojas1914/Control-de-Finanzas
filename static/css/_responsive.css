@@ -30,6 +30,7 @@
   .nav-link svg { width: 20px; height: 20px; }
 
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .conf-grid       { grid-template-columns: 1fr; }
   .cuentas-layout  { grid-template-columns: 1fr; }
   .cuentas-panel-izq { position: static; }
   .detalle-acciones { margin-left: 0; }
