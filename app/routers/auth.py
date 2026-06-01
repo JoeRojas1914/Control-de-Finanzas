@@ -4,7 +4,9 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.database import get_db
-from app.models import Usuario
+from app.models import (Usuario, Cuenta, Transaccion, RendimientoDiario, Transferencia,
+                        TransaccionRecurrente, HorarioRendimiento, RendimientoProgramado,
+                        Presupuesto, Meta, Categoria)
 from app.auth import hash_password, verify_password, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -92,6 +94,32 @@ def actualizar_perfil(
             setattr(user, campo, datetime.fromisoformat(valor))
         else:
             setattr(user, campo, valor)
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/me")
+def eliminar_cuenta_usuario(
+    db:   Session = Depends(get_db),
+    user: Usuario = Depends(get_current_user),
+):
+    ids = [r[0] for r in db.query(Cuenta.id).filter(Cuenta.usuario_id == user.id).all()]
+
+    if ids:
+        db.query(Transaccion).filter(Transaccion.cuenta_id.in_(ids)).delete(synchronize_session=False)
+        db.query(RendimientoDiario).filter(RendimientoDiario.cuenta_id.in_(ids)).delete(synchronize_session=False)
+        db.query(Transferencia).filter(
+            (Transferencia.cuenta_origen_id.in_(ids)) | (Transferencia.cuenta_destino_id.in_(ids))
+        ).delete(synchronize_session=False)
+
+    db.query(TransaccionRecurrente).filter(TransaccionRecurrente.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(HorarioRendimiento).filter(HorarioRendimiento.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(RendimientoProgramado).filter(RendimientoProgramado.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(Presupuesto).filter(Presupuesto.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(Meta).filter(Meta.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(Cuenta).filter(Cuenta.usuario_id == user.id).delete(synchronize_session=False)
+    db.query(Categoria).filter(Categoria.usuario_id == user.id).delete(synchronize_session=False)
+    db.delete(user)
     db.commit()
     return {"ok": True}
 

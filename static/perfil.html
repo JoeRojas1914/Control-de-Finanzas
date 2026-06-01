@@ -86,13 +86,14 @@
 
     </div>
 
-    <!-- Zona de sesión -->
+    <!-- Zona peligrosa -->
     <div class="card" style="border:1px solid rgba(239,68,68,0.25)">
-      <h2 class="card-title" style="color:#ef4444">Sesión</h2>
+      <h2 class="card-title" style="color:#ef4444">Zona de peligro</h2>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
-        Al cerrar sesión se eliminará tu acceso local. Necesitarás ingresar tus credenciales de nuevo.
+        Eliminar tu cuenta borrará permanentemente todos tus datos: cuentas, transacciones,
+        rendimientos, presupuestos, metas y configuraciones. Esta acción es irreversible.
       </p>
-      <button class="btn-danger-full" onclick="cerrarSesion()">Cerrar sesión</button>
+      <button class="btn-danger-full" onclick="eliminarCuentaUsuario()">Eliminar mi cuenta</button>
     </div>
 
   </main>
@@ -198,6 +199,23 @@
         document.getElementById('p-clave-nueva2').value  = '';
       } catch(e) {
         toast(e.message || 'Error al cambiar contraseña', 'err');
+      }
+    }
+
+    async function eliminarCuentaUsuario() {
+      const ok = await confirmar(
+        '¿Eliminar tu cuenta permanentemente?',
+        'Se borrarán todos tus datos: cuentas, transacciones, rendimientos, presupuestos, metas y configuraciones. Esta acción no se puede deshacer.',
+        'Eliminar mi cuenta'
+      );
+      if (!ok) return;
+      try {
+        await fetch('/api/auth/me', { method: 'DELETE', headers: { 'Authorization': 'Basic ' + localStorage.getItem('finanzas_auth') } });
+        localStorage.removeItem('finanzas_auth');
+        localStorage.removeItem('finanzas_perfil');
+        window.location.href = '/static/login.html';
+      } catch {
+        toast('Error al eliminar la cuenta', 'err');
       }
     }
 
