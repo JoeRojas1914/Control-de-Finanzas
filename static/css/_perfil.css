@@ -65,9 +65,9 @@
 .color-swatch:hover  { transform: scale(1.15); }
 .color-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 
-/* ── Danger button ───────────────────────────────────────────── */
-.btn-danger {
-  background: rgba(239,68,68,0.12);
+/* ── Danger button ────────────── */
+.btn-danger-full {
+  background: rgba(239,68,68,0.1);
   color: #ef4444;
   border: 1px solid rgba(239,68,68,0.3);
   padding: 9px 20px;
@@ -79,55 +79,5 @@
   transition: background 0.15s;
 }
 
-.btn-danger:hover { background: rgba(239,68,68,0.22); }
+.btn-danger-full:hover { background: rgba(239,68,68,0.2); }
 
-/* ── Avatar en navbar ────────────────────────────────────────── */
-.nav-avatar-sm {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #6366f1;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  letter-spacing: -0.5px;
-}
-
-.nav-user-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.15s;
-  margin-bottom: 4px;
-}
-
-.nav-user-btn:hover,
-.nav-user-btn--active { background: rgba(255,255,255,0.1); }
-
-.nav-user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  overflow: hidden;
-}
-
-.nav-user-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.9);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nav-user-sub {
-  font-size: 10px;
-  color: rgba(255,255,255,0.4);
-}

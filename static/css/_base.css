@@ -7,9 +7,15 @@ body {
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02","cv03","cv04","cv11";
   padding-left: var(--sidebar-w);
   transition: background 0.3s, color 0.2s;
   min-height: 100vh;
+}
+
+.tabla, .metric-value, .cuenta-saldo {
+  font-feature-settings: "tnum" 1;
 }
 
 html.dark body {
