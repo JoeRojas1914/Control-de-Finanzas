@@ -255,7 +255,7 @@ function renderizarTransferencias(resetear = true) {
 }
 
 async function eliminarTransferencia(id) {
-  if (!confirm('¿Eliminar esta transferencia?\nSe revertirán los saldos de ambas cuentas.')) return;
+  if (!await confirmar('¿Eliminar esta transferencia?', 'Se revertirán los saldos de ambas cuentas.')) return;
   try {
     await del(`/api/transferencias/${id}`);
     toast('Transferencia eliminada', 'ok');
@@ -327,7 +327,7 @@ async function guardarTx() {
 }
 
 async function eliminarTx(id, descripcion) {
-  if (!confirm(`¿Eliminar "${descripcion}"?\nEl monto se revertirá en el saldo de la cuenta.`)) return;
+  if (!await confirmar(`¿Eliminar "${descripcion}"?`, 'El monto se revertirá en el saldo de la cuenta.')) return;
   try {
     await del(`/api/transacciones/${id}`);
     toast('Transacción eliminada', 'ok');
@@ -385,7 +385,7 @@ async function guardarEdicion() {
 }
 
 async function eliminarRendimiento(id) {
-  if (!confirm('¿Seguro que quieres eliminar este rendimiento?\nEl monto se descontará del saldo de la cuenta.')) return;
+  if (!await confirmar('¿Eliminar este rendimiento?', 'El monto se descontará del saldo de la cuenta.')) return;
 
   try {
     await del('/api/rendimientos/' + id);

@@ -1,6 +1,12 @@
 // ── State ────────────────────────────────────────────────────
 let todasCuentas       = [];
 let cuentaSeleccionada = null;
+const TX_POR_PAGINA    = 15;
+const REND_POR_PAGINA  = 10;
+let _paginaActual      = 1;
+let _totalTx           = 0;
+let _paginaRendActual  = 1;
+let _totalRend         = 0;
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -76,18 +82,42 @@ function mostrarPlaceholder() {
 async function cargarDetalle() {
   if (!cuentaSeleccionada) { mostrarPlaceholder(); return; }
   const c = cuentaSeleccionada;
+  _paginaActual = 1;
 
-  const peticiones = [
-    get(`/api/transacciones/?cuenta_id=${c.id}&limite=15`),
-    c.tipo === 'debito' ? get(`/api/rendimientos/?cuenta_id=${c.id}&limite=15`) : Promise.resolve([]),
-    c.tipo === 'debito' ? get(`/api/cuentas/${c.id}/rendimientos`)              : Promise.resolve(null),
-  ];
+  _paginaActual = 1;
+  _paginaRendActual = 1;
 
-  const [transacciones, rendimientos, resumen] = await Promise.all(peticiones);
+  const [transacciones, conteo, estadisticas, rendimientos, conteoRend, resumen] = await Promise.all([
+    get(`/api/transacciones/?cuenta_id=${c.id}&limite=${TX_POR_PAGINA}&offset=0`),
+    get(`/api/transacciones/count?cuenta_id=${c.id}`),
+    get(`/api/cuentas/${c.id}/estadisticas`),
+    c.tipo === 'debito' ? get(`/api/rendimientos/?cuenta_id=${c.id}&limite=${REND_POR_PAGINA}&offset=0`) : Promise.resolve([]),
+    c.tipo === 'debito' ? get(`/api/rendimientos/count?cuenta_id=${c.id}`) : Promise.resolve({total:0}),
+    c.tipo === 'debito' ? get(`/api/cuentas/${c.id}/rendimientos`)         : Promise.resolve(null),
+  ]);
+
+  _totalTx   = conteo?.total    ?? 0;
+  _totalRend = conteoRend?.total ?? 0;
 
   document.getElementById('detalle-panel').innerHTML = c.tipo === 'debito'
-    ? renderDetalleDebito(c, resumen, rendimientos, transacciones)
-    : renderDetalleCredito(c, transacciones);
+    ? renderDetalleDebito(c, resumen, rendimientos, transacciones, estadisticas)
+    : renderDetalleCredito(c, transacciones, estadisticas);
+}
+
+async function irPaginaRend(pagina) {
+  if (!cuentaSeleccionada) return;
+  _paginaRendActual = pagina;
+  const offset = (pagina - 1) * REND_POR_PAGINA;
+  const rends  = await get(`/api/rendimientos/?cuenta_id=${cuentaSeleccionada.id}&limite=${REND_POR_PAGINA}&offset=${offset}`);
+  document.getElementById('cuenta-rend-section').innerHTML = renderRendConPaginacion(rends);
+}
+
+async function irPagina(pagina) {
+  if (!cuentaSeleccionada) return;
+  _paginaActual = pagina;
+  const offset  = (pagina - 1) * TX_POR_PAGINA;
+  const txs     = await get(`/api/transacciones/?cuenta_id=${cuentaSeleccionada.id}&limite=${TX_POR_PAGINA}&offset=${offset}`);
+  document.getElementById('cuenta-tx-section').innerHTML = renderTxConPaginacion(txs);
 }
 
 // ── Detail renderers ──────────────────────────────────────────
@@ -109,7 +139,7 @@ function renderHeader(c) {
     </div>`;
 }
 
-function renderDetalleDebito(c, resumen, rendimientos, transacciones) {
+function renderDetalleDebito(c, resumen, rendimientos, transacciones, estadisticas) {
   return `
     ${renderHeader(c)}
 
@@ -132,18 +162,20 @@ function renderDetalleDebito(c, resumen, rendimientos, transacciones) {
       </div>
     </div>
 
+    ${renderEstadisticas(estadisticas)}
+
     <div class="card" style="margin-bottom:16px">
-      <h2 class="card-title">Rendimientos recientes</h2>
-      ${renderListaRendimientos(rendimientos)}
+      <h2 class="card-title">Rendimientos</h2>
+      <div id="cuenta-rend-section">${renderRendConPaginacion(rendimientos)}</div>
     </div>
 
     <div class="card">
-      <h2 class="card-title">Movimientos recientes</h2>
-      ${renderTablaTransacciones(transacciones)}
+      <h2 class="card-title">Movimientos</h2>
+      <div id="cuenta-tx-section">${renderTxConPaginacion(transacciones)}</div>
     </div>`;
 }
 
-function renderDetalleCredito(c, transacciones) {
+function renderDetalleCredito(c, transacciones, estadisticas) {
   const deuda      = Math.abs(c.saldo);
   const limite     = c.limite || 0;
   const disponible = Math.max(0, limite - deuda);
@@ -180,10 +212,84 @@ function renderDetalleCredito(c, transacciones) {
       ${c.dia_pago  ? `<div><p class="metric-label">Límite de pago</p><p style="font-size:15px;font-weight:600;color:var(--text)">Día ${c.dia_pago} de cada mes</p></div>` : ''}
     </div>` : ''}
 
+    ${renderEstadisticas(estadisticas)}
+
     <div class="card">
-      <h2 class="card-title">Movimientos recientes</h2>
-      ${renderTablaTransacciones(transacciones)}
+      <h2 class="card-title">Movimientos</h2>
+      <div id="cuenta-tx-section">${renderTxConPaginacion(transacciones)}</div>
     </div>`;
+}
+
+function renderRendConPaginacion(rends) {
+  const totalPags = Math.ceil(_totalRend / REND_POR_PAGINA);
+  const inicio    = (_paginaRendActual - 1) * REND_POR_PAGINA + 1;
+  const fin       = Math.min(_paginaRendActual * REND_POR_PAGINA, _totalRend);
+  const hayPags   = _totalRend > REND_POR_PAGINA;
+
+  return `
+    ${hayPags ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text-muted)">${inicio}–${fin} de ${_totalRend}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-sm" ${_paginaRendActual<=1 ? 'disabled style="opacity:.4;pointer-events:none"':''} onclick="irPaginaRend(${_paginaRendActual-1})">← Ant.</button>
+        <span style="font-size:12px;color:var(--text-muted);padding:0 4px">Pág. ${_paginaRendActual} / ${totalPags}</span>
+        <button class="btn-sm" ${_paginaRendActual>=totalPags ? 'disabled style="opacity:.4;pointer-events:none"':''} onclick="irPaginaRend(${_paginaRendActual+1})">Sig. →</button>
+      </div>
+    </div>` : ''}
+    ${renderListaRendimientos(rends)}`;
+}
+
+async function eliminarTx(txId) {
+  if (!await confirmar('¿Eliminar este movimiento?', 'El saldo de la cuenta se ajustará automáticamente.')) return;
+  try {
+    await del(`/api/transacciones/${txId}`);
+    toast('Movimiento eliminado', 'ok');
+    await cargarCuentas(true);
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+function renderEstadisticas(s) {
+  if (!s || s.total_txs === 0) return '';
+  const rows = [
+    ['Total ingresos',      `<span class="monto-pos">+${fmt(s.total_ingresos)}</span>`],
+    ['Total gastos',        `<span class="monto-neg">${fmt(s.total_gastos)}</span>`],
+    ['Promedio mensual',    fmt(s.prom_mensual_gasto)],
+    ['Mes con más gasto',   s.mes_mayor_gasto ? `${s.mes_mayor_gasto} (${fmt(s.mes_mayor_gasto_monto)})` : '—'],
+    ['Categoría principal', s.top_categoria   ? `${s.top_categoria} (${fmt(s.top_categoria_monto)})` : '—'],
+    ['Movimientos totales', s.total_txs],
+  ];
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <h2 class="card-title">Estadísticas históricas</h2>
+      <div class="stats-grid">
+        ${rows.map(([label, val]) => `
+          <div class="stat-item">
+            <div class="stat-label">${label}</div>
+            <div class="stat-value">${val}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderTxConPaginacion(txs) {
+  const totalPags = Math.ceil(_totalTx / TX_POR_PAGINA);
+  const inicio    = (_paginaActual - 1) * TX_POR_PAGINA + 1;
+  const fin       = Math.min(_paginaActual * TX_POR_PAGINA, _totalTx);
+  const hayPags   = _totalTx > TX_POR_PAGINA;
+
+  return `
+    ${hayPags ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text-muted)">${inicio}–${fin} de ${_totalTx} movimientos</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-sm" ${_paginaActual <= 1 ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPagina(${_paginaActual - 1})">← Ant.</button>
+        <span style="font-size:12px;color:var(--text-muted);padding:0 4px">Pág. ${_paginaActual} / ${totalPags}</span>
+        <button class="btn-sm" ${_paginaActual >= totalPags ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPagina(${_paginaActual + 1})">Sig. →</button>
+      </div>
+    </div>` : ''}
+    ${renderTablaTransacciones(txs)}`;
 }
 
 function renderListaRendimientos(rendimientos) {
@@ -217,6 +323,7 @@ function renderTablaTransacciones(transacciones) {
           <th>Descripción</th>
           <th>Categoría</th>
           <th style="text-align:right">Monto</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -224,12 +331,22 @@ function renderTablaTransacciones(transacciones) {
           const cat   = t.categoria ? t.categoria.nombre : '—';
           const color = t.monto < 0 ? 'color:#a32d2d' : 'color:#0f6e56';
           const signo = t.monto > 0 ? '+' : '';
+          const txJson = encodeURIComponent(JSON.stringify({
+            id: t.id, descripcion: t.descripcion, monto: t.monto,
+            cuenta_id: t.cuenta_id || t.cuenta?.id,
+            categoria_id: t.categoria_id || t.categoria?.id || null,
+            fecha: t.fecha,
+          }));
           return `
             <tr>
               <td>${fmtFecha(t.fecha)}</td>
               <td>${t.descripcion}</td>
-              <td>${cat}</td>
+              <td><span class="cat-badge">${cat}</span></td>
               <td style="text-align:right;${color}">${signo}${fmt(t.monto)}</td>
+              <td style="text-align:right;white-space:nowrap">
+                <button class="btn-sm" onclick="abrirEditarTx(JSON.parse(decodeURIComponent('${txJson}')))">Editar</button>
+                <button class="btn-sm btn-danger" onclick="eliminarTx(${t.id})">Eliminar</button>
+              </td>
             </tr>`;
         }).join('')}
       </tbody>
@@ -356,7 +473,10 @@ async function eliminarCuenta() {
   if (!cuentaSeleccionada) return;
   const { id, nombre } = cuentaSeleccionada;
 
-  if (!confirm(`¿Seguro que quieres eliminar la cuenta "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+  if (!await confirmar(
+    `¿Eliminar la cuenta "${nombre}"?`,
+    'Se eliminarán permanentemente todas las transacciones, rendimientos, transferencias y recurrentes asociados a esta cuenta. Esta acción no se puede deshacer.'
+  )) return;
 
   try {
     await del(`/api/cuentas/${id}`);
@@ -408,7 +528,7 @@ async function guardarEdicionRend() {
 }
 
 async function eliminarRendimiento(id) {
-  if (!confirm('¿Seguro que quieres eliminar este rendimiento?\nEl monto se descontará del saldo.')) return;
+  if (!await confirmar('¿Eliminar este rendimiento?', 'El monto se descontará del saldo de la cuenta.')) return;
 
   try {
     await del(`/api/rendimientos/${id}`);

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from app.database import get_db
 from app.models import Transaccion, Cuenta, TipoCuenta, Usuario
 from app.schemas import TransaccionCreate, TransaccionOut
@@ -12,8 +13,17 @@ def _cuenta_ids(db: Session, user_id: int):
     return [r[0] for r in db.query(Cuenta.id).filter(Cuenta.usuario_id == user_id).all()]
 
 
+@router.get("/count")
+def contar_transacciones(cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    ids = _cuenta_ids(db, user.id)
+    q   = db.query(func.count(Transaccion.id)).filter(Transaccion.cuenta_id.in_(ids))
+    if cuenta_id is not None:
+        q = q.filter(Transaccion.cuenta_id == cuenta_id)
+    return {"total": q.scalar()}
+
+
 @router.get("/", response_model=list[TransaccionOut])
-def listar_transacciones(limite: int = 20, cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+def listar_transacciones(limite: int = 20, offset: int = 0, cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
     ids = _cuenta_ids(db, user.id)
     q = (
         db.query(Transaccion)
@@ -23,7 +33,7 @@ def listar_transacciones(limite: int = 20, cuenta_id: int = None, db: Session = 
     )
     if cuenta_id is not None:
         q = q.filter(Transaccion.cuenta_id == cuenta_id)
-    return q.limit(limite).all()
+    return q.offset(offset).limit(limite).all()
 
 
 @router.post("/", response_model=TransaccionOut)

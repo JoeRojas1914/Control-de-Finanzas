@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from datetime import datetime
 from app.database import get_db
 from app.models import RendimientoDiario, Cuenta, Usuario
@@ -13,8 +14,17 @@ def _cuenta_ids(db: Session, user_id: int):
     return [r[0] for r in db.query(Cuenta.id).filter(Cuenta.usuario_id == user_id).all()]
 
 
+@router.get("/count")
+def contar_rendimientos(cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+    ids = _cuenta_ids(db, user.id)
+    q   = db.query(func.count(RendimientoDiario.id)).filter(RendimientoDiario.cuenta_id.in_(ids))
+    if cuenta_id is not None:
+        q = q.filter(RendimientoDiario.cuenta_id == cuenta_id)
+    return {"total": q.scalar()}
+
+
 @router.get("/")
-def listar_rendimientos(limite: int = 30, cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
+def listar_rendimientos(limite: int = 30, offset: int = 0, cuenta_id: int = None, db: Session = Depends(get_db), user: Usuario = Depends(get_current_user)):
     ids = _cuenta_ids(db, user.id)
     q = (
         db.query(RendimientoDiario)
@@ -24,7 +34,7 @@ def listar_rendimientos(limite: int = 30, cuenta_id: int = None, db: Session = D
     )
     if cuenta_id is not None:
         q = q.filter(RendimientoDiario.cuenta_id == cuenta_id)
-    rendimientos = q.limit(limite).all()
+    rendimientos = q.offset(offset).limit(limite).all()
     return [
         {
             "id":            r.id,

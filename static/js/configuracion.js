@@ -89,7 +89,7 @@ async function guardarEdicion() {
 // ── Eliminar ──────────────────────────────────────────────────
 
 async function eliminarCategoria(id, nombre) {
-  if (!confirm(`¿Eliminar la categoría "${nombre}"?\n\nTodas las transacciones, presupuestos y recurrentes asociados quedarán sin categoría. Esta acción no se puede deshacer.`)) return;
+  if (!await confirmar(`¿Eliminar la categoría "${nombre}"?`, 'Todas las transacciones, presupuestos y recurrentes asociados quedarán sin categoría.')) return;
   try {
     await del(`/api/categorias/${id}`);
     toast(`Categoría "${nombre}" eliminada`, 'ok');
@@ -250,7 +250,7 @@ async function guardarPres() {
 }
 
 async function eliminarPres(id, categoria) {
-  if (!confirm(`¿Eliminar el presupuesto de "${categoria}"?`)) return;
+  if (!await confirmar(`¿Eliminar el presupuesto de "${categoria}"?`)) return;
   try {
     await del(`/api/presupuestos/${id}`);
     toast(`Presupuesto de "${categoria}" eliminado`, 'ok');
@@ -373,7 +373,7 @@ async function guardarRec() {
 }
 
 async function eliminarRec(id, descripcion) {
-  if (!confirm(`¿Eliminar "${descripcion}"?\nLas transacciones ya creadas permanecerán.`)) return;
+  if (!await confirmar(`¿Eliminar "${descripcion}"?`, 'Las transacciones ya creadas permanecerán.')) return;
   try {
     await del(`/api/recurrentes/${id}`);
     toast(`"${descripcion}" eliminada`, 'ok');
@@ -517,7 +517,7 @@ async function guardarRendP() {
 }
 
 async function eliminarRendP(id) {
-  if (!confirm('¿Eliminar este rendimiento programado?\nLos rendimientos ya registrados permanecerán.')) return;
+  if (!await confirmar('¿Eliminar este rendimiento programado?', 'Los rendimientos ya registrados permanecerán.')) return;
   try {
     await del(`/api/rendimientos-programados/${id}`);
     toast('Rendimiento programado eliminado', 'ok');
@@ -603,7 +603,7 @@ async function guardarHorario() {
 }
 
 async function eliminarHorario(id) {
-  if (!confirm('¿Eliminar este horario personalizado?\nLos rendimientos ya registrados permanecerán.')) return;
+  if (!await confirmar('¿Eliminar este horario personalizado?', 'Los rendimientos ya registrados permanecerán.')) return;
   try {
     await del(`/api/rendimientos-programados/horarios/${id}`);
     toast('Horario eliminado', 'ok');
@@ -750,7 +750,7 @@ async function guardarMeta() {
 }
 
 async function eliminarMeta(id, nombre) {
-  if (!confirm(`¿Eliminar la meta "${nombre}"?`)) return;
+  if (!await confirmar(`¿Eliminar la meta "${nombre}"?`)) return;
   try {
     await del(`/api/metas/${id}`);
     toast(`Meta "${nombre}" eliminada`, 'ok');

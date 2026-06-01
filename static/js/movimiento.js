@@ -1,4 +1,5 @@
-let _tabModal = 'ingreso';
+let _tabModal      = 'ingreso';
+let _editandoTxId  = null;
 
 function abrirMovimiento(tab) {
   _tabModal = tab || 'ingreso';
@@ -20,10 +21,32 @@ function abrirMovimiento(tab) {
 }
 
 function cerrarMovimiento() {
+  _editandoTxId = null;
   document.getElementById('modal-movimiento').classList.remove('abierto');
+  document.getElementById('mov-titulo').textContent    = 'Registrar';
+  document.getElementById('btn-guardar-mov').textContent = 'Guardar';
   ['mov-descripcion','mov-monto','trf-monto','trf-descripcion'].forEach(id => {
     document.getElementById(id).value = '';
   });
+}
+
+async function abrirEditarTx(tx) {
+  _editandoTxId = tx.id;
+  const [cuentas, categorias] = await Promise.all([get('/api/cuentas/'), get('/api/categorias/')]);
+  document.getElementById('mov-cuenta').innerHTML    = cuentas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('mov-categoria').innerHTML = categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  document.getElementById('mov-descripcion').value = tx.descripcion;
+  document.getElementById('mov-monto').value        = Math.abs(tx.monto);
+  document.getElementById('mov-fecha').value        = tx.fecha.split('T')[0];
+  document.getElementById('mov-cuenta').value       = tx.cuenta_id || tx.cuenta?.id;
+  if (tx.categoria_id) document.getElementById('mov-categoria').value = tx.categoria_id;
+
+  document.getElementById('mov-titulo').textContent     = 'Editar movimiento';
+  document.getElementById('btn-guardar-mov').textContent = 'Guardar cambios';
+
+  _switchTab(tx.monto >= 0 ? 'ingreso' : 'gasto');
+  document.getElementById('modal-movimiento').classList.add('abierto');
 }
 
 function _switchTab(tab) {
@@ -48,17 +71,20 @@ async function registrarMovimiento() {
 
   const monto = _tabModal === 'gasto' ? -Math.abs(montoRaw) : Math.abs(montoRaw);
 
+  const payload = { descripcion, monto, cuenta_id, categoria_id, fecha: new Date(fecha + 'T12:00:00').toISOString() };
   try {
-    await post('/api/transacciones/', {
-      descripcion, monto, cuenta_id, categoria_id,
-      fecha: new Date(fecha + 'T12:00:00').toISOString()
-    });
-    toast(`${_tabModal === 'gasto' ? 'Gasto' : 'Ingreso'} registrado`, 'ok');
+    if (_editandoTxId) {
+      await patch(`/api/transacciones/${_editandoTxId}`, payload);
+      toast('Movimiento actualizado', 'ok');
+    } else {
+      await post('/api/transacciones/', payload);
+      toast(`${_tabModal === 'gasto' ? 'Gasto' : 'Ingreso'} registrado`, 'ok');
+      if (_tabModal === 'gasto' && !isNaN(categoria_id)) _alertaPresupuesto(categoria_id);
+    }
     cerrarMovimiento();
     if (typeof cargarDashboard === 'function') cargarDashboard();
     if (typeof cargarHistorial === 'function') cargarHistorial();
     if (typeof cargarCuentas   === 'function') cargarCuentas(true);
-    if (_tabModal === 'gasto' && !isNaN(categoria_id)) _alertaPresupuesto(categoria_id);
   } catch (e) {
     toast(e.message, 'err');
   }
@@ -142,7 +168,7 @@ modal.className = 'modal-overlay';
 modal.innerHTML = `
   <div class="modal-box" style="max-width:440px">
     <div class="modal-header">
-      <h2 class="card-title" style="margin:0">Registrar</h2>
+      <h2 class="card-title" style="margin:0" id="mov-titulo">Registrar</h2>
       <button class="modal-close" onclick="cerrarMovimiento()">✕</button>
     </div>
 
@@ -174,7 +200,7 @@ modal.innerHTML = `
         <label>Fecha</label>
         <input type="date" id="mov-fecha">
       </div>
-      <button class="btn-primary" onclick="registrarMovimiento()">Guardar</button>
+      <button class="btn-primary" id="btn-guardar-mov" onclick="registrarMovimiento()">Guardar</button>
     </div>
 
     <!-- Formulario transferencia -->
