@@ -89,7 +89,7 @@ async function guardarEdicion() {
 // ── Eliminar ──────────────────────────────────────────────────
 
 async function eliminarCategoria(id, nombre) {
-  if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSolo puedes eliminarla si no tiene transacciones registradas.`)) return;
+  if (!confirm(`¿Eliminar la categoría "${nombre}"?\n\nTodas las transacciones, presupuestos y recurrentes asociados quedarán sin categoría. Esta acción no se puede deshacer.`)) return;
   try {
     await del(`/api/categorias/${id}`);
     toast(`Categoría "${nombre}" eliminada`, 'ok');

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Categoria, Transaccion, Usuario
+from app.models import Categoria, Transaccion, Presupuesto, TransaccionRecurrente, Usuario
 from app.schemas import CategoriaOut, CategoriaCreate
 from app.auth import get_current_user
 
@@ -52,12 +52,11 @@ def eliminar_categoria(categoria_id: int, db: Session = Depends(get_db), user: U
     cat = db.query(Categoria).filter(Categoria.id == categoria_id, Categoria.usuario_id == user.id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    tiene_tx = db.query(Transaccion).filter(Transaccion.categoria_id == categoria_id).first()
-    if tiene_tx:
-        raise HTTPException(
-            status_code=400,
-            detail="No se puede eliminar una categoría con transacciones registradas"
-        )
+
+    db.query(Transaccion).filter(Transaccion.categoria_id == categoria_id).update({"categoria_id": None})
+    db.query(Presupuesto).filter(Presupuesto.categoria_id == categoria_id).update({"categoria_id": None})
+    db.query(TransaccionRecurrente).filter(TransaccionRecurrente.categoria_id == categoria_id).update({"categoria_id": None})
+
     db.delete(cat)
     db.commit()
     return {"ok": True}
