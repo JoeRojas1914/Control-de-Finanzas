@@ -16,8 +16,7 @@
 }
 
 html.dark .cuentas-panel-izq {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.05);
 }
 
 .cuentas-panel-izq-header {

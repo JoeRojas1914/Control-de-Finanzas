@@ -20,8 +20,7 @@
 }
 
 html.dark .metric-card {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.06);
 }
 
 .metric-card:hover {
@@ -102,8 +101,7 @@ html.dark .metric-card[data-color="purple"] { background: rgba(139,92,246,0.08);
 }
 
 html.dark .card {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.05);
 }
 
 .card-title {
