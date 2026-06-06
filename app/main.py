@@ -9,7 +9,7 @@ from app import models
 from app.routers import (
     auth, cuentas, transacciones, rendimientos, dashboard,
     categorias, reportes, recurrentes, presupuestos,
-    transferencias, rendimientos_programados, metas,
+    transferencias, rendimientos_programados, metas, msi,
 )
 
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +26,7 @@ def _migrar():
         ("usuarios",  "fecha_nacimiento", "DATETIME"),
         ("usuarios",  "moneda",           "VARCHAR"),
         ("usuarios",  "avatar_color",     "VARCHAR"),
+        ("msi",       "transaccion_id",   "INTEGER"),
     ]
     with engine.begin() as conn:
         for tabla, col, tipo in columnas:
@@ -50,6 +51,7 @@ app.include_router(presupuestos.router)
 app.include_router(transferencias.router)
 app.include_router(rendimientos_programados.router)
 app.include_router(metas.router)
+app.include_router(msi.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

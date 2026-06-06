@@ -16,6 +16,10 @@ let _totalRendP        = 0;
 let _recurrentesCuenta   = [];
 let _rendpFijosCuenta    = [];
 let _rendpHorariosCuenta = [];
+const MSI_POR_PAGINA     = 5;
+let _paginaMSIActual     = 1;
+let _totalMSI            = 0;
+let _msiCuenta           = [];
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -96,8 +100,9 @@ async function cargarDetalle() {
   _paginaRendActual  = 1;
   _paginaRecActual   = 1;
   _paginaRendPActual = 1;
+  _paginaMSIActual   = 1;
 
-  const [transacciones, conteo, estadisticas, rendimientos, conteoRend, resumen, todosRec, todosFijos, todosHorarios] = await Promise.all([
+  const [transacciones, conteo, estadisticas, rendimientos, conteoRend, resumen, todosRec, todosFijos, todosHorarios, todosMSI] = await Promise.all([
     get(`/api/transacciones/?cuenta_id=${c.id}&limite=${TX_POR_PAGINA}&offset=0`),
     get(`/api/transacciones/count?cuenta_id=${c.id}`),
     get(`/api/cuentas/${c.id}/estadisticas`),
@@ -107,6 +112,7 @@ async function cargarDetalle() {
     get('/api/recurrentes/'),
     c.tipo === 'debito' ? get('/api/rendimientos-programados/')          : Promise.resolve([]),
     c.tipo === 'debito' ? get('/api/rendimientos-programados/horarios/') : Promise.resolve([]),
+    c.tipo === 'credito' ? get('/api/msi/')                              : Promise.resolve([]),
   ]);
 
   _totalTx   = conteo?.total    ?? 0;
@@ -115,8 +121,10 @@ async function cargarDetalle() {
   _recurrentesCuenta   = (todosRec      || []).filter(r => r.cuenta_id === c.id);
   _rendpFijosCuenta    = (todosFijos    || []).filter(r => r.cuenta_id === c.id);
   _rendpHorariosCuenta = (todosHorarios || []).filter(h => h.cuenta_id === c.id);
+  _msiCuenta           = (todosMSI      || []).filter(m => m.cuenta_id === c.id);
   _totalRec   = _recurrentesCuenta.length;
   _totalRendP = _rendpFijosCuenta.length + _rendpHorariosCuenta.length;
+  _totalMSI   = _msiCuenta.length;
 
   document.getElementById('detalle-panel').innerHTML = c.tipo === 'debito'
     ? renderDetalleDebito(c, resumen, rendimientos, transacciones, estadisticas)
@@ -141,7 +149,7 @@ async function irPagina(pagina) {
 
 // ── Detail renderers ──────────────────────────────────────────
 
-function renderHeader(c) {
+function renderHeader(c, extraButtons = '') {
   return `
     <div class="detalle-header">
       <div class="detalle-badge" style="${badgeEstilo(c.tipo)}">
@@ -152,6 +160,7 @@ function renderHeader(c) {
         <p class="detalle-subtitulo">${tipoLabel(c.tipo)} · creada ${fmtFecha(c.creada_en)}</p>
       </div>
       <div class="detalle-acciones">
+        ${extraButtons}
         <button class="btn-sm" onclick="abrirModalEditar()">Editar</button>
         <button class="btn-sm btn-danger" onclick="eliminarCuenta()">Eliminar</button>
       </div>
@@ -223,7 +232,7 @@ function renderDetalleCredito(c, transacciones, estadisticas) {
     .reduce((s, t) => s + Math.abs(t.monto), 0);
 
   return `
-    ${renderHeader(c)}
+    ${renderHeader(c, '<button class="btn-sm" onclick="abrirModalPagoTarjeta()">↑ Registrar pago</button>')}
 
     <div class="metrics-grid" style="margin-bottom:16px">
       <div class="metric-card">
@@ -257,12 +266,20 @@ function renderDetalleCredito(c, transacciones, estadisticas) {
       <div id="cuenta-tx-section">${renderTxConPaginacion(transacciones)}</div>
     </div>
 
-    <div class="card">
+    <div class="card" style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h2 class="card-title" style="margin:0">Transacciones recurrentes</h2>
         <button class="btn-sm" onclick="abrirModalRec()">+ Nueva</button>
       </div>
       <div id="cuenta-rec-section">${renderRecConPaginacion()}</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Meses sin intereses</h2>
+        <button class="btn-sm" onclick="abrirModalMSI()">+ Nueva compra</button>
+      </div>
+      <div id="cuenta-msi-section">${renderMSIConPaginacion()}</div>
     </div>`;
 }
 
@@ -984,6 +1001,180 @@ async function toggleHorario(id, activo) {
     await patch(`/api/rendimientos-programados/horarios/${id}/toggle`, {});
     toast(activo ? 'Pausado' : 'Activado', 'ok');
     _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// ── MSI ───────────────────────────────────────────────────────
+
+function renderListaMSI(items) {
+  if (!items.length) return '<div class="empty-state">Sin compras a meses sin intereses</div>';
+  return items.map(m => {
+    const pct  = Math.round(m.pagos_completados / m.meses * 100);
+    const done = m.meses_restantes === 0;
+    return `
+    <div class="cuenta-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="cuenta-nombre">${m.descripcion}</div>
+          <div style="font-size:12px;color:var(--text-muted)">
+            ${fmt(m.monto_mensual)}/mes · ${done ? '<span style="color:#1D9E75">Liquidado</span>' : `${m.meses_restantes} meses restantes`} · Total: ${fmt(m.total)}
+          </div>
+        </div>
+        <button class="btn-sm btn-danger" onclick="eliminarMSI(${m.id}, ${JSON.stringify(m.descripcion)})">Eliminar</button>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill${done ? '" style="width:100%;background:#1D9E75' : `" style="width:${pct}%`}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);text-align:right">${m.pagos_completados} de ${m.meses} meses pagados</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMSIConPaginacion() {
+  const totalPags = Math.ceil(_totalMSI / MSI_POR_PAGINA);
+  const inicio    = (_paginaMSIActual - 1) * MSI_POR_PAGINA;
+  const fin       = Math.min(_paginaMSIActual * MSI_POR_PAGINA, _totalMSI);
+  const slice     = _msiCuenta.slice(inicio, fin);
+  const hayPags   = _totalMSI > MSI_POR_PAGINA;
+
+  return `
+    ${hayPags ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text-muted)">${inicio + 1}–${fin} de ${_totalMSI}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-sm" ${_paginaMSIActual <= 1 ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaMSI(${_paginaMSIActual - 1})">← Ant.</button>
+        <span style="font-size:12px;color:var(--text-muted);padding:0 4px">Pág. ${_paginaMSIActual} / ${totalPags}</span>
+        <button class="btn-sm" ${_paginaMSIActual >= totalPags ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaMSI(${_paginaMSIActual + 1})">Sig. →</button>
+      </div>
+    </div>` : ''}
+    ${renderListaMSI(slice)}`;
+}
+
+function irPaginaMSI(pagina) {
+  _paginaMSIActual = pagina;
+  const el = document.getElementById('cuenta-msi-section');
+  if (el) el.innerHTML = renderMSIConPaginacion();
+}
+
+function abrirModalMSI() {
+  document.getElementById('msi-id').value          = '';
+  document.getElementById('msi-cuenta-id').value   = cuentaSeleccionada.id;
+  document.getElementById('msi-descripcion').value = '';
+  document.getElementById('msi-total').value        = '';
+  document.getElementById('msi-meses').value        = '';
+  document.getElementById('msi-fecha').value        = new Date().toISOString().split('T')[0];
+  document.getElementById('msi-total-group').style.display = '';
+  document.getElementById('msi-fecha-group').style.display = '';
+  document.getElementById('msi-preview').style.display    = 'none';
+  document.getElementById('modal-msi-titulo').textContent = 'Nueva compra MSI';
+  document.getElementById('modal-msi').classList.add('abierto');
+}
+
+function cerrarModalMSI() {
+  document.getElementById('modal-msi').classList.remove('abierto');
+}
+
+document.getElementById('modal-msi').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalMSI();
+});
+
+function _actualizarPreviewMSI() {
+  const total = parseFloat(document.getElementById('msi-total').value) || 0;
+  const meses = parseInt(document.getElementById('msi-meses').value)   || 0;
+  const preview = document.getElementById('msi-preview');
+  if (total > 0 && meses > 0) {
+    preview.style.display = '';
+    document.getElementById('msi-preview-mensual').textContent = fmt(total / meses) + ' / mes';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+async function guardarMSI() {
+  const descripcion = document.getElementById('msi-descripcion').value.trim();
+  const total       = parseFloat(document.getElementById('msi-total').value);
+  const meses       = parseInt(document.getElementById('msi-meses').value);
+  const fechaStr    = document.getElementById('msi-fecha').value;
+  const cuenta_id   = parseInt(document.getElementById('msi-cuenta-id').value);
+
+  if (!descripcion)        { toast('La descripción es obligatoria', 'err'); return; }
+  if (!total || total <= 0){ toast('El monto es obligatorio', 'err'); return; }
+  if (!meses || meses <= 0){ toast('Selecciona el número de meses', 'err'); return; }
+  if (!fechaStr)           { toast('La fecha es obligatoria', 'err'); return; }
+
+  const fecha_inicio = new Date(fechaStr + 'T12:00:00').toISOString();
+  try {
+    await post('/api/msi/', { descripcion, total, meses, fecha_inicio, cuenta_id });
+    cerrarModalMSI();
+    toast('Compra MSI registrada', 'ok');
+    await cargarCuentas(true);
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarMSI(id, descripcion) {
+  if (!await confirmar(
+    `¿Eliminar "${descripcion}"?`,
+    'Se revertirá la transacción original y el saldo de la tarjeta se ajustará.'
+  )) return;
+  try {
+    await del(`/api/msi/${id}`);
+    toast(`"${descripcion}" eliminado`, 'ok');
+    await cargarCuentas(true);
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// ── Pago de tarjeta ───────────────────────────────────────────
+
+function abrirModalPagoTarjeta() {
+  if (!cuentaSeleccionada) return;
+  const debitos = todasCuentas.filter(c => c.tipo === 'debito');
+  if (!debitos.length) { toast('No tienes cuentas débito para hacer el pago', 'err'); return; }
+
+  document.getElementById('pago-origen').innerHTML = debitos
+    .map(c => `<option value="${c.id}">${c.nombre} (${fmt(c.saldo)})</option>`)
+    .join('');
+  document.getElementById('pago-descripcion').value = `Pago ${cuentaSeleccionada.nombre}`;
+  document.getElementById('pago-monto').value        = '';
+  document.getElementById('pago-fecha').value        = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-pago-tarjeta').classList.add('abierto');
+}
+
+function cerrarModalPagoTarjeta() {
+  document.getElementById('modal-pago-tarjeta').classList.remove('abierto');
+}
+
+document.getElementById('modal-pago-tarjeta').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalPagoTarjeta();
+});
+
+async function guardarPagoTarjeta() {
+  const cuenta_origen_id  = parseInt(document.getElementById('pago-origen').value);
+  const monto             = parseFloat(document.getElementById('pago-monto').value);
+  const descripcion       = document.getElementById('pago-descripcion').value.trim()
+                            || `Pago ${cuentaSeleccionada.nombre}`;
+  const fechaStr          = document.getElementById('pago-fecha').value;
+
+  if (!monto || monto <= 0) { toast('El monto es obligatorio', 'err'); return; }
+  if (!fechaStr)            { toast('La fecha es obligatoria', 'err'); return; }
+
+  const fecha = new Date(fechaStr + 'T12:00:00').toISOString();
+  try {
+    await post('/api/transferencias/', {
+      cuenta_origen_id,
+      cuenta_destino_id: cuentaSeleccionada.id,
+      monto,
+      descripcion,
+      fecha,
+    });
+    cerrarModalPagoTarjeta();
+    toast(`Pago de ${fmt(monto)} registrado`, 'ok');
+    await cargarCuentas(true);
   } catch (e) {
     toast(e.message, 'err');
   }

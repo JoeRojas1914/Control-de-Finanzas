@@ -175,3 +175,20 @@ class Meta(Base):
     fecha_objetivo = Column(DateTime, nullable=True)
     creada_en      = Column(DateTime, default=datetime.now)
     usuario_id     = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
+
+
+class MSI(Base):
+    __tablename__ = "msi"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    descripcion    = Column(String, nullable=False)
+    total          = Column(Float, nullable=False)
+    meses          = Column(Integer, nullable=False)
+    monto_mensual  = Column(Float, nullable=False)
+    fecha_inicio   = Column(DateTime, nullable=False)
+    cuenta_id      = Column(Integer, ForeignKey("cuentas.id"), nullable=False)
+    transaccion_id = Column(Integer, ForeignKey("transacciones.id"), nullable=True)
+    usuario_id     = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
+    creado_en      = Column(DateTime, default=datetime.now)
+
+    cuenta = relationship("Cuenta")
