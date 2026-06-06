@@ -3,10 +3,19 @@ let todasCuentas       = [];
 let cuentaSeleccionada = null;
 const TX_POR_PAGINA    = 15;
 const REND_POR_PAGINA  = 10;
+const REC_POR_PAGINA   = 5;
+const RENDP_POR_PAGINA = 5;
 let _paginaActual      = 1;
 let _totalTx           = 0;
 let _paginaRendActual  = 1;
 let _totalRend         = 0;
+let _paginaRecActual   = 1;
+let _totalRec          = 0;
+let _paginaRendPActual = 1;
+let _totalRendP        = 0;
+let _recurrentesCuenta   = [];
+let _rendpFijosCuenta    = [];
+let _rendpHorariosCuenta = [];
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -82,22 +91,32 @@ function mostrarPlaceholder() {
 async function cargarDetalle() {
   if (!cuentaSeleccionada) { mostrarPlaceholder(); return; }
   const c = cuentaSeleccionada;
-  _paginaActual = 1;
 
-  _paginaActual = 1;
-  _paginaRendActual = 1;
+  _paginaActual      = 1;
+  _paginaRendActual  = 1;
+  _paginaRecActual   = 1;
+  _paginaRendPActual = 1;
 
-  const [transacciones, conteo, estadisticas, rendimientos, conteoRend, resumen] = await Promise.all([
+  const [transacciones, conteo, estadisticas, rendimientos, conteoRend, resumen, todosRec, todosFijos, todosHorarios] = await Promise.all([
     get(`/api/transacciones/?cuenta_id=${c.id}&limite=${TX_POR_PAGINA}&offset=0`),
     get(`/api/transacciones/count?cuenta_id=${c.id}`),
     get(`/api/cuentas/${c.id}/estadisticas`),
     c.tipo === 'debito' ? get(`/api/rendimientos/?cuenta_id=${c.id}&limite=${REND_POR_PAGINA}&offset=0`) : Promise.resolve([]),
-    c.tipo === 'debito' ? get(`/api/rendimientos/count?cuenta_id=${c.id}`) : Promise.resolve({total:0}),
-    c.tipo === 'debito' ? get(`/api/cuentas/${c.id}/rendimientos`)         : Promise.resolve(null),
+    c.tipo === 'debito' ? get(`/api/rendimientos/count?cuenta_id=${c.id}`)                              : Promise.resolve({total:0}),
+    c.tipo === 'debito' ? get(`/api/cuentas/${c.id}/rendimientos`)                                     : Promise.resolve(null),
+    get('/api/recurrentes/'),
+    c.tipo === 'debito' ? get('/api/rendimientos-programados/')          : Promise.resolve([]),
+    c.tipo === 'debito' ? get('/api/rendimientos-programados/horarios/') : Promise.resolve([]),
   ]);
 
   _totalTx   = conteo?.total    ?? 0;
   _totalRend = conteoRend?.total ?? 0;
+
+  _recurrentesCuenta   = (todosRec      || []).filter(r => r.cuenta_id === c.id);
+  _rendpFijosCuenta    = (todosFijos    || []).filter(r => r.cuenta_id === c.id);
+  _rendpHorariosCuenta = (todosHorarios || []).filter(h => h.cuenta_id === c.id);
+  _totalRec   = _recurrentesCuenta.length;
+  _totalRendP = _rendpFijosCuenta.length + _rendpHorariosCuenta.length;
 
   document.getElementById('detalle-panel').innerHTML = c.tipo === 'debito'
     ? renderDetalleDebito(c, resumen, rendimientos, transacciones, estadisticas)
@@ -169,9 +188,28 @@ function renderDetalleDebito(c, resumen, rendimientos, transacciones, estadistic
       <div id="cuenta-rend-section">${renderRendConPaginacion(rendimientos)}</div>
     </div>
 
-    <div class="card">
+    <div class="card" style="margin-bottom:16px">
       <h2 class="card-title">Movimientos</h2>
       <div id="cuenta-tx-section">${renderTxConPaginacion(transacciones)}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Transacciones recurrentes</h2>
+        <button class="btn-sm" onclick="abrirModalRec()">+ Nueva</button>
+      </div>
+      <div id="cuenta-rec-section">${renderRecConPaginacion()}</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Rendimientos automáticos</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" onclick="abrirModalRendP()">+ Fijo</button>
+          <button class="btn-sm" onclick="abrirModalHorario()">+ Personalizado</button>
+        </div>
+      </div>
+      <div id="cuenta-rendp-section">${renderRendPConPaginacion()}</div>
     </div>`;
 }
 
@@ -214,9 +252,17 @@ function renderDetalleCredito(c, transacciones, estadisticas) {
 
     ${renderEstadisticas(estadisticas)}
 
-    <div class="card">
+    <div class="card" style="margin-bottom:16px">
       <h2 class="card-title">Movimientos</h2>
       <div id="cuenta-tx-section">${renderTxConPaginacion(transacciones)}</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 class="card-title" style="margin:0">Transacciones recurrentes</h2>
+        <button class="btn-sm" onclick="abrirModalRec()">+ Nueva</button>
+      </div>
+      <div id="cuenta-rec-section">${renderRecConPaginacion()}</div>
     </div>`;
 }
 
@@ -534,6 +580,410 @@ async function eliminarRendimiento(id) {
     await del(`/api/rendimientos/${id}`);
     toast('Rendimiento eliminado', 'ok');
     await cargarCuentas(true);
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// ── Recurrentes ───────────────────────────────────────────────
+
+const FRECUENCIA_LABEL = {
+  diaria: 'Diaria', semanal: 'Semanal', quincenal: 'Quincenal',
+  mensual: 'Mensual', anual: 'Anual'
+};
+
+function renderListaRecurrentes(recs) {
+  if (!recs.length) return '<div class="empty-state">Sin transacciones recurrentes</div>';
+  return recs.map(r => `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">${r.descripcion}</div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${fmt(r.monto)} · ${FRECUENCIA_LABEL[r.frecuencia]} · próxima: ${fmtFecha(r.proxima_fecha)}
+          ${r.activa ? '' : '· <span style="color:#f59e0b">Pausada</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleRec(${r.id}, ${r.activa})">${r.activa ? 'Pausar' : 'Activar'}</button>
+        <button class="btn-sm" onclick="abrirModalRec(${r.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarRec(${r.id}, ${JSON.stringify(r.descripcion)})">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderRecConPaginacion() {
+  const totalPags = Math.ceil(_totalRec / REC_POR_PAGINA);
+  const inicio    = (_paginaRecActual - 1) * REC_POR_PAGINA;
+  const fin       = Math.min(_paginaRecActual * REC_POR_PAGINA, _totalRec);
+  const slice     = _recurrentesCuenta.slice(inicio, fin);
+  const hayPags   = _totalRec > REC_POR_PAGINA;
+
+  return `
+    ${hayPags ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text-muted)">${inicio + 1}–${fin} de ${_totalRec}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-sm" ${_paginaRecActual <= 1 ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaRec(${_paginaRecActual - 1})">← Ant.</button>
+        <span style="font-size:12px;color:var(--text-muted);padding:0 4px">Pág. ${_paginaRecActual} / ${totalPags}</span>
+        <button class="btn-sm" ${_paginaRecActual >= totalPags ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaRec(${_paginaRecActual + 1})">Sig. →</button>
+      </div>
+    </div>` : ''}
+    ${renderListaRecurrentes(slice)}`;
+}
+
+function irPaginaRec(pagina) {
+  _paginaRecActual = pagina;
+  const el = document.getElementById('cuenta-rec-section');
+  if (el) el.innerHTML = renderRecConPaginacion();
+}
+
+async function _recargarRec() {
+  if (!cuentaSeleccionada) return;
+  const todos = await get('/api/recurrentes/');
+  _recurrentesCuenta = (todos || []).filter(r => r.cuenta_id === cuentaSeleccionada.id);
+  _totalRec = _recurrentesCuenta.length;
+  _paginaRecActual = 1;
+  const el = document.getElementById('cuenta-rec-section');
+  if (el) el.innerHTML = renderRecConPaginacion();
+}
+
+async function abrirModalRec(id) {
+  const cats = await get('/api/categorias/');
+
+  document.getElementById('rec-cuenta').innerHTML =
+    `<option value="${cuentaSeleccionada.id}">${cuentaSeleccionada.nombre}</option>`;
+  document.getElementById('rec-cuenta').closest('.form-group').style.display = 'none';
+
+  document.getElementById('rec-categoria').innerHTML =
+    '<option value="">Sin categoría</option>' +
+    cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  if (id) {
+    const rec = _recurrentesCuenta.find(r => r.id === id);
+    document.getElementById('modal-rec-titulo').textContent  = 'Editar recurrente';
+    document.getElementById('rec-id').value                  = rec.id;
+    document.getElementById('rec-descripcion').value         = rec.descripcion;
+    document.getElementById('rec-monto').value               = rec.monto;
+    document.getElementById('rec-frecuencia').value          = rec.frecuencia;
+    document.getElementById('rec-proxima-fecha').value       = rec.proxima_fecha.split('T')[0];
+    document.getElementById('rec-categoria').value           = rec.categoria_id || '';
+  } else {
+    document.getElementById('modal-rec-titulo').textContent  = 'Nueva recurrente';
+    document.getElementById('rec-id').value                  = '';
+    document.getElementById('rec-descripcion').value         = '';
+    document.getElementById('rec-monto').value               = '';
+    document.getElementById('rec-frecuencia').value          = 'mensual';
+    document.getElementById('rec-proxima-fecha').value       = new Date().toISOString().split('T')[0];
+    document.getElementById('rec-categoria').value           = '';
+  }
+  document.getElementById('modal-rec').classList.add('abierto');
+}
+
+function cerrarModalRec() {
+  document.getElementById('modal-rec').classList.remove('abierto');
+}
+
+document.getElementById('modal-rec').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalRec();
+});
+
+async function guardarRec() {
+  const id          = document.getElementById('rec-id').value;
+  const descripcion = document.getElementById('rec-descripcion').value.trim();
+  const monto       = parseFloat(document.getElementById('rec-monto').value);
+  const frecuencia  = document.getElementById('rec-frecuencia').value;
+  const fechaStr    = document.getElementById('rec-proxima-fecha').value;
+  const cuenta_id   = parseInt(document.getElementById('rec-cuenta').value);
+  const catVal      = document.getElementById('rec-categoria').value;
+  const categoria_id = catVal ? parseInt(catVal) : null;
+
+  if (!descripcion) { toast('La descripción es obligatoria', 'err'); return; }
+  if (!monto)       { toast('El monto es obligatorio', 'err'); return; }
+  if (!fechaStr)    { toast('La fecha es obligatoria', 'err'); return; }
+
+  const proxima_fecha = new Date(fechaStr + 'T12:00:00').toISOString();
+  const cuerpo = { descripcion, monto, frecuencia, proxima_fecha, cuenta_id, categoria_id };
+
+  try {
+    if (id) {
+      await patch(`/api/recurrentes/${id}`, cuerpo);
+      toast('Recurrente actualizada', 'ok');
+    } else {
+      await post('/api/recurrentes/', cuerpo);
+      toast('Recurrente creada', 'ok');
+    }
+    cerrarModalRec();
+    _recargarRec();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarRec(id, descripcion) {
+  if (!await confirmar(`¿Eliminar "${descripcion}"?`, 'Las transacciones ya creadas permanecerán.')) return;
+  try {
+    await del(`/api/recurrentes/${id}`);
+    toast(`"${descripcion}" eliminada`, 'ok');
+    _recargarRec();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleRec(id, activa) {
+  try {
+    await patch(`/api/recurrentes/${id}/toggle`, {});
+    toast(activa ? 'Recurrente pausada' : 'Recurrente activada', 'ok');
+    _recargarRec();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// ── Rendimientos programados ──────────────────────────────────
+
+const _DIAS_LABEL = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+const _DIAS_KEY   = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+
+function renderRendPConPaginacion() {
+  const combinados = [..._rendpFijosCuenta, ..._rendpHorariosCuenta];
+  if (!combinados.length) return '<div class="empty-state">Sin rendimientos programados</div>';
+
+  const totalPags = Math.ceil(_totalRendP / RENDP_POR_PAGINA);
+  const inicio    = (_paginaRendPActual - 1) * RENDP_POR_PAGINA;
+  const fin       = Math.min(_paginaRendPActual * RENDP_POR_PAGINA, _totalRendP);
+  const slice     = combinados.slice(inicio, fin);
+  const hayPags   = _totalRendP > RENDP_POR_PAGINA;
+
+  const htmlItems = slice.map(item => {
+    if ('frecuencia' in item) {
+      return `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">
+          <span style="font-size:11px;background:rgba(59,130,246,0.12);color:#3b82f6;padding:2px 7px;border-radius:5px;margin-right:6px">Fijo</span>
+          ${fmt(item.monto)} · ${FRECUENCIA_LABEL[item.frecuencia]}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          Próxima: ${fmtFecha(item.proxima_fecha)}
+          ${item.activo ? '' : '· <span style="color:#f59e0b">Pausado</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleRendP(${item.id}, ${item.activo})">${item.activo ? 'Pausar' : 'Activar'}</button>
+        <button class="btn-sm" onclick="abrirModalRendP(${item.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarRendP(${item.id})">Eliminar</button>
+      </div>
+    </div>`;
+    } else {
+      const resumen = _DIAS_LABEL
+        .map((d, i) => item[_DIAS_KEY[i]] ? `${d}: ${fmt(item[_DIAS_KEY[i]])}` : null)
+        .filter(Boolean).join(' · ');
+      return `
+    <div class="cuenta-row">
+      <div class="cuenta-info">
+        <div class="cuenta-nombre">
+          <span style="font-size:11px;background:rgba(139,92,246,0.12);color:#8b5cf6;padding:2px 7px;border-radius:5px;margin-right:6px">Personalizado</span>
+          ${resumen || 'Sin montos configurados'}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${item.activo ? '' : '<span style="color:#f59e0b">Pausado</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="toggleHorario(${item.id}, ${item.activo})">${item.activo ? 'Pausar' : 'Activar'}</button>
+        <button class="btn-sm" onclick="abrirModalHorario(${item.id})">Editar</button>
+        <button class="btn-sm btn-danger" onclick="eliminarHorario(${item.id})">Eliminar</button>
+      </div>
+    </div>`;
+    }
+  }).join('');
+
+  return `
+    ${hayPags ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text-muted)">${inicio + 1}–${fin} de ${_totalRendP}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-sm" ${_paginaRendPActual <= 1 ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaRendP(${_paginaRendPActual - 1})">← Ant.</button>
+        <span style="font-size:12px;color:var(--text-muted);padding:0 4px">Pág. ${_paginaRendPActual} / ${totalPags}</span>
+        <button class="btn-sm" ${_paginaRendPActual >= totalPags ? 'disabled style="opacity:.4;pointer-events:none"' : ''} onclick="irPaginaRendP(${_paginaRendPActual + 1})">Sig. →</button>
+      </div>
+    </div>` : ''}
+    ${htmlItems}`;
+}
+
+function irPaginaRendP(pagina) {
+  _paginaRendPActual = pagina;
+  const el = document.getElementById('cuenta-rendp-section');
+  if (el) el.innerHTML = renderRendPConPaginacion();
+}
+
+async function _recargarRendP() {
+  if (!cuentaSeleccionada) return;
+  const [fijos, horarios] = await Promise.all([
+    get('/api/rendimientos-programados/'),
+    get('/api/rendimientos-programados/horarios/'),
+  ]);
+  _rendpFijosCuenta    = (fijos    || []).filter(r => r.cuenta_id === cuentaSeleccionada.id);
+  _rendpHorariosCuenta = (horarios || []).filter(h => h.cuenta_id === cuentaSeleccionada.id);
+  _totalRendP = _rendpFijosCuenta.length + _rendpHorariosCuenta.length;
+  _paginaRendPActual = 1;
+  const el = document.getElementById('cuenta-rendp-section');
+  if (el) el.innerHTML = renderRendPConPaginacion();
+}
+
+async function abrirModalRendP(id) {
+  document.getElementById('rendp-cuenta').innerHTML =
+    `<option value="${cuentaSeleccionada.id}">${cuentaSeleccionada.nombre}</option>`;
+  document.getElementById('rendp-cuenta').closest('.form-group').style.display = 'none';
+
+  if (id) {
+    const r = _rendpFijosCuenta.find(x => x.id === id);
+    document.getElementById('modal-rendp-titulo').textContent  = 'Editar rendimiento automático';
+    document.getElementById('rendp-id').value                  = r.id;
+    document.getElementById('rendp-monto').value               = r.monto;
+    document.getElementById('rendp-frecuencia').value          = r.frecuencia;
+    document.getElementById('rendp-proxima-fecha').value       = r.proxima_fecha.split('T')[0];
+  } else {
+    document.getElementById('modal-rendp-titulo').textContent  = 'Nuevo rendimiento automático';
+    document.getElementById('rendp-id').value                  = '';
+    document.getElementById('rendp-monto').value               = '';
+    document.getElementById('rendp-frecuencia').value          = 'diaria';
+    document.getElementById('rendp-proxima-fecha').value       = new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('modal-rendp').classList.add('abierto');
+}
+
+function cerrarModalRendP() {
+  document.getElementById('modal-rendp').classList.remove('abierto');
+}
+
+document.getElementById('modal-rendp').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalRendP();
+});
+
+async function guardarRendP() {
+  const id           = document.getElementById('rendp-id').value;
+  const cuenta_id    = parseInt(document.getElementById('rendp-cuenta').value);
+  const monto        = parseFloat(document.getElementById('rendp-monto').value);
+  const frecuencia   = document.getElementById('rendp-frecuencia').value;
+  const fechaStr     = document.getElementById('rendp-proxima-fecha').value;
+
+  if (!monto || monto <= 0) { toast('El monto debe ser mayor a cero', 'err'); return; }
+  if (!fechaStr)             { toast('La fecha es obligatoria', 'err'); return; }
+
+  const proxima_fecha = new Date(fechaStr + 'T12:00:00').toISOString();
+  const cuerpo = { cuenta_id, monto, frecuencia, proxima_fecha };
+
+  try {
+    if (id) {
+      await patch(`/api/rendimientos-programados/${id}`, cuerpo);
+      toast('Rendimiento actualizado', 'ok');
+    } else {
+      await post('/api/rendimientos-programados/', cuerpo);
+      toast('Rendimiento programado creado', 'ok');
+    }
+    cerrarModalRendP();
+    _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarRendP(id) {
+  if (!await confirmar('¿Eliminar este rendimiento programado?', 'Los rendimientos ya registrados permanecerán.')) return;
+  try {
+    await del(`/api/rendimientos-programados/${id}`);
+    toast('Rendimiento programado eliminado', 'ok');
+    _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleRendP(id, activo) {
+  try {
+    await patch(`/api/rendimientos-programados/${id}/toggle`, {});
+    toast(activo ? 'Pausado' : 'Activado', 'ok');
+    _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function abrirModalHorario(id) {
+  document.getElementById('horario-cuenta').innerHTML =
+    `<option value="${cuentaSeleccionada.id}">${cuentaSeleccionada.nombre}</option>`;
+  document.getElementById('horario-cuenta').closest('.form-group').style.display = 'none';
+
+  _DIAS_KEY.forEach(d => { document.getElementById(`horario-${d}`).value = ''; });
+
+  if (id) {
+    const h = _rendpHorariosCuenta.find(x => x.id === id);
+    document.getElementById('modal-horario-titulo').textContent = 'Editar horario personalizado';
+    document.getElementById('horario-id').value                 = h.id;
+    _DIAS_KEY.forEach(d => {
+      document.getElementById(`horario-${d}`).value = h[d] || '';
+    });
+  } else {
+    document.getElementById('modal-horario-titulo').textContent = 'Horario personalizado';
+    document.getElementById('horario-id').value                 = '';
+  }
+  document.getElementById('modal-horario').classList.add('abierto');
+}
+
+function cerrarModalHorario() {
+  document.getElementById('modal-horario').classList.remove('abierto');
+}
+
+document.getElementById('modal-horario').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalHorario();
+});
+
+async function guardarHorario() {
+  const id        = document.getElementById('horario-id').value;
+  const cuenta_id = parseInt(document.getElementById('horario-cuenta').value);
+
+  const cuerpo = { cuenta_id };
+  _DIAS_KEY.forEach(d => {
+    const v = parseFloat(document.getElementById(`horario-${d}`).value);
+    cuerpo[d] = isNaN(v) || v <= 0 ? null : v;
+  });
+
+  const tieneAlgo = _DIAS_KEY.some(d => cuerpo[d]);
+  if (!tieneAlgo) { toast('Ingresa al menos un monto', 'err'); return; }
+
+  try {
+    if (id) {
+      await patch(`/api/rendimientos-programados/horarios/${id}`, cuerpo);
+      toast('Horario actualizado', 'ok');
+    } else {
+      await post('/api/rendimientos-programados/horarios/', cuerpo);
+      toast('Horario creado', 'ok');
+    }
+    cerrarModalHorario();
+    _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function eliminarHorario(id) {
+  if (!await confirmar('¿Eliminar este horario personalizado?', 'Los rendimientos ya registrados permanecerán.')) return;
+  try {
+    await del(`/api/rendimientos-programados/horarios/${id}`);
+    toast('Horario eliminado', 'ok');
+    _recargarRendP();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+async function toggleHorario(id, activo) {
+  try {
+    await patch(`/api/rendimientos-programados/horarios/${id}/toggle`, {});
+    toast(activo ? 'Pausado' : 'Activado', 'ok');
+    _recargarRendP();
   } catch (e) {
     toast(e.message, 'err');
   }
