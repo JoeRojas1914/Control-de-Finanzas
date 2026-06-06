@@ -33,27 +33,40 @@ function _renderPaginacion(total) {
 
 function irPagina(n) {
   paginaActual = n;
-  if (tabActual === 'transferencias') renderizarTransferencias(false);
-  else renderizar(false);
+  renderizar(false);
   document.getElementById('tabla-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function cargarHistorial() {
   document.getElementById('tabla-historial').innerHTML = _skeletonTabla(8, 7);
-  const cuentas = await get('/api/cuentas/');
-  todasCuentas    = cuentas;
-  cuentasDebito   = cuentas.filter(x => x.tipo === 'debito');
-  todasCategorias = await get('/api/categorias/');
+  try {
+    const [cuentas, categorias] = await Promise.all([
+      get('/api/cuentas/'),
+      get('/api/categorias/'),
+    ]);
+    todasCuentas    = Array.isArray(cuentas)    ? cuentas    : [];
+    todasCategorias = Array.isArray(categorias) ? categorias : [];
+    cuentasDebito   = todasCuentas.filter(x => x.tipo === 'debito');
 
-  [transacciones, rendimientos, transferencias] = await Promise.all([
-    get('/api/transacciones/?limite=1000'),
-    get('/api/rendimientos/?limite=1000'),
-    get('/api/transferencias/'),
-  ]);
+    const [txArr, rendArr, trfArr] = await Promise.all([
+      get('/api/transacciones/?limite=5000'),
+      get('/api/rendimientos/?limite=5000'),
+      get('/api/transferencias/'),
+    ]);
+    transacciones  = Array.isArray(txArr)  ? txArr  : [];
+    rendimientos   = Array.isArray(rendArr) ? rendArr : [];
+    transferencias = Array.isArray(trfArr) ? trfArr : [];
 
-  poblarMeses();
-  poblarFiltros();
-  renderizar();
+    poblarMeses();
+    poblarFiltros();
+    renderizar();
+  } catch (e) {
+    console.error('cargarHistorial:', e);
+    document.getElementById('tabla-historial').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:24px">
+         Error al cargar el historial. Intenta recargar la página.
+       </td></tr>`;
+  }
 }
 
 function poblarFiltros() {
@@ -74,20 +87,18 @@ function poblarFiltros() {
 
 function poblarMeses() {
   const meses = new Set();
-  transacciones.forEach(t => meses.add(t.fecha.slice(0, 7)));
-  rendimientos.forEach(r  => meses.add(r.fecha.slice(0, 7)));
+  transacciones.forEach(t  => t.fecha && meses.add(t.fecha.slice(0, 7)));
+  rendimientos.forEach(r   => r.fecha && meses.add(r.fecha.slice(0, 7)));
+  transferencias.forEach(t => t.fecha && meses.add(t.fecha.slice(0, 7)));
 
   const ordenados = [...meses].sort().reverse();
 
-  const hoy = new Date().toISOString().slice(0, 7);
-  mesActual = ordenados.includes(hoy) ? hoy : (ordenados[0] || '');
+  mesActual = '';
 
   const select = document.getElementById('filtro-mes');
   select.innerHTML =
-    '<option value="">Todos los meses</option>' +
-    ordenados.map(m =>
-      `<option value="${m}" ${m === mesActual ? 'selected' : ''}>${fmtMes(m)}</option>`
-    ).join('');
+    '<option value="" selected>Todos los meses</option>' +
+    ordenados.map(m => `<option value="${m}">${fmtMes(m)}</option>`).join('');
 }
 
 function fmtMes(yyyyMM) {
@@ -107,16 +118,11 @@ function cambiarTab(tab, btn) {
   btn.classList.add('active');
 
   const esTrf = tab === 'transferencias';
-  document.getElementById('tabla-wrap').style.display             = esTrf ? 'none' : '';
-  document.getElementById('tabla-transferencias-wrap').style.display = esTrf ? '' : 'none';
-
-  // Los filtros de búsqueda/categoría/cuenta no aplican al tab de transferencias
   document.getElementById('filtro-busqueda').style.display  = esTrf ? 'none' : '';
   document.getElementById('filtro-categoria').style.display = esTrf ? 'none' : '';
   document.getElementById('filtro-cuenta').style.display    = esTrf ? 'none' : '';
 
-  if (esTrf) renderizarTransferencias();
-  else renderizar();
+  renderizar();
 }
 
 function cambiarMes() {
@@ -140,6 +146,7 @@ function renderizar(resetear = true) {
 
   const txMes   = txFiltradas;
   const rendMes = filtrarMes(rendimientos);
+  const trfMes  = filtrarMes(transferencias);
 
   const ingresos = txMes.filter(t => t.monto > 0);
   const gastos   = txMes.filter(t => t.monto < 0);
@@ -168,6 +175,9 @@ function renderizar(resetear = true) {
   if (tabActual === 'todos' || tabActual === 'gastos') {
     gastos.forEach(t => filas.push({ ...t, _tipo: 'gasto' }));
   }
+  if (tabActual === 'todos' || tabActual === 'transferencias') {
+    trfMes.forEach(t => filas.push({ ...t, _tipo: 'transferencia' }));
+  }
 
   filas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
@@ -185,6 +195,21 @@ function renderizar(resetear = true) {
   _renderPaginacion(total);
 
   tbody.innerHTML = pagina.map(f => {
+    if (f._tipo === 'transferencia') {
+      return `
+        <tr>
+          <td><span class="tipo-badge tipo-trf">Transferencia</span></td>
+          <td>${f.descripcion || '—'}</td>
+          <td>—</td>
+          <td>${f.cuenta_origen} → ${f.cuenta_destino}</td>
+          <td>${fmtFecha(f.fecha)}</td>
+          <td style="text-align:right;font-weight:500">${fmt(f.monto)}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn-sm btn-danger" onclick="eliminarTransferencia(${f.id})">Eliminar</button>
+          </td>
+        </tr>`;
+    }
+
     if (f._tipo === 'rendimiento') {
       return `
         <tr>
@@ -221,46 +246,12 @@ function renderizar(resetear = true) {
   }).join('');
 }
 
-/* ── Transferencias ── */
-
-function renderizarTransferencias(resetear = true) {
-  if (resetear) paginaActual = 1;
-
-  const trfMes = mesActual
-    ? transferencias.filter(t => t.fecha.startsWith(mesActual))
-    : transferencias;
-
-  const total  = trfMes.length;
-  const inicio = (paginaActual - 1) * POR_PAGINA;
-  const pagina = trfMes.slice(inicio, inicio + POR_PAGINA);
-  const tbody  = document.getElementById('tabla-transferencias');
-
-  _renderPaginacion(total);
-
-  if (!total) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:24px">Sin transferencias para este período</td></tr>';
-    return;
-  }
-  tbody.innerHTML = pagina.map(t => `
-    <tr>
-      <td>${t.cuenta_origen}</td>
-      <td>${t.cuenta_destino}</td>
-      <td style="color:var(--text-muted)">${t.descripcion || '—'}</td>
-      <td>${fmtFecha(t.fecha)}</td>
-      <td style="text-align:right;font-weight:500">${fmt(t.monto)}</td>
-      <td style="text-align:right">
-        <button class="btn-sm btn-danger" onclick="eliminarTransferencia(${t.id})">Eliminar</button>
-      </td>
-    </tr>`).join('');
-}
-
 async function eliminarTransferencia(id) {
   if (!await confirmar('¿Eliminar esta transferencia?', 'Se revertirán los saldos de ambas cuentas.')) return;
   try {
     await del(`/api/transferencias/${id}`);
     toast('Transferencia eliminada', 'ok');
     await cargarHistorial();
-    renderizarTransferencias();
   } catch (e) {
     toast(e.message, 'err');
   }
@@ -447,6 +438,12 @@ function exportarCSV() {
       gastos.forEach(t => filas.push([
         'Gasto', esc(t.descripcion), esc(t.categoria?.nombre || 'Sin categoría'),
         esc(t.cuenta?.nombre || '—'), t.fecha.split('T')[0], t.monto,
+      ]));
+    }
+    if (tabActual === 'todos') {
+      trfMes.forEach(t => filas.push([
+        'Transferencia', esc(t.descripcion || ''), '—',
+        esc(`${t.cuenta_origen} → ${t.cuenta_destino}`), t.fecha.split('T')[0], t.monto,
       ]));
     }
     filas.sort((a, b) => new Date(b[4]) - new Date(a[4]));

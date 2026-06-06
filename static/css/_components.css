@@ -203,6 +203,7 @@ input:focus, select:focus {
 .tipo-rend    { background: rgba(26,110,220,0.1); color: #1a6edc; }
 .tipo-ingreso { background: rgba(5,150,105,0.1);  color: #059669; }
 .tipo-gasto   { background: rgba(220,38,38,0.1);  color: #dc2626; }
+.tipo-trf     { background: rgba(124,58,237,0.1); color: #7c3aed; }
 
 /* ── FAB ────────────────────────────────────────────────────── */
 .fab {

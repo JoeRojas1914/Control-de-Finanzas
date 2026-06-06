@@ -53,9 +53,9 @@ def listar_transferencias(db: Session = Depends(get_db), user: Usuario = Depends
             "monto":             r.monto,
             "descripcion":       r.descripcion,
             "fecha":             r.fecha.isoformat(),
-            "cuenta_origen":     r.cuenta_origen.nombre,
+            "cuenta_origen":     r.cuenta_origen.nombre  if r.cuenta_origen  else "—",
             "cuenta_origen_id":  r.cuenta_origen_id,
-            "cuenta_destino":    r.cuenta_destino.nombre,
+            "cuenta_destino":    r.cuenta_destino.nombre if r.cuenta_destino else "—",
             "cuenta_destino_id": r.cuenta_destino_id,
         }
         for r in rows
