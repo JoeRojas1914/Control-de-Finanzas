@@ -12,6 +12,8 @@ let _selMes = new Date().getMonth() + 1;
 let _selAñoAnual = new Date().getFullYear();
 let _charts = {};
 let _anualCargado = false;
+let _rendimientosGraf = [];
+let _debitoIds        = new Set();
 
 // ── Helpers ───────────────────────────────────────────────────
 function _destroyChart(key) {
@@ -36,6 +38,18 @@ function _buildSelectorAños(años) {
 
 function _labelMes(año, mes) {
   return new Date(año, mes - 1, 1).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+}
+
+// ── Privacidad ────────────────────────────────────────────────
+const _SVG_OJO = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const _SVG_OJO_OFF = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+function togglePrivacidad() {
+  const activo = document.documentElement.classList.toggle('privado');
+  localStorage.setItem('privacidad', activo ? '1' : '0');
+  const btn = document.getElementById('btn-privacidad');
+  btn.innerHTML = activo ? _SVG_OJO_OFF : _SVG_OJO;
+  btn.title = activo ? 'Mostrar montos' : 'Ocultar montos';
 }
 
 // ── Tabs ──────────────────────────────────────────────────────
@@ -64,6 +78,7 @@ async function cambiarMes() {
     cargarResumenMes(año, mes),
     cargarGastosPorCategoria(año, mes),
   ]);
+  _renderGraficaRend();
 }
 
 // ── Selector de año ───────────────────────────────────────────
@@ -78,7 +93,6 @@ async function cambiarAño() {
 async function cargarDatosDashboard() {
   ['kpi-patrimonio','kpi-deuda'].forEach(_skeletonKpi);
   document.getElementById('lista-cuentas-dash').innerHTML = _skeletonLista(2);
-  document.getElementById('tabla-tx-dash').innerHTML      = _skeletonTabla(5, 5);
 
   const resultado = await post('/api/recurrentes/aplicar', {});
   if (resultado?.aplicadas > 0)
@@ -109,17 +123,6 @@ async function cargarDatosDashboard() {
         </div>`).join('')
     : '<div class="empty-state">Sin cuentas de débito</div>';
 
-  const tx = data.ultimas_transacciones;
-  document.getElementById('tabla-tx-dash').innerHTML = tx.length === 0
-    ? '<tr><td colspan="5" style="text-align:center;color:var(--text-hint);padding:20px">Sin movimientos aún</td></tr>'
-    : tx.map(t => `
-        <tr>
-          <td>${t.descripcion}</td>
-          <td><span class="cat-badge">${t.categoria || 'Sin categoría'}</span></td>
-          <td>${t.cuenta}</td>
-          <td>${fmtFecha(t.fecha)}</td>
-          <td style="text-align:right" class="${t.monto < 0 ? 'monto-neg' : 'monto-pos'}">${fmt(t.monto)}</td>
-        </tr>`).join('');
 }
 
 // ── Resumen mensual ───────────────────────────────────────────
@@ -301,19 +304,16 @@ async function cargarRendimientosMes() {
 
   document.getElementById('tabla-rendimientos').innerHTML = `
     <table class="tabla">
-      <thead><tr><th>Cuenta</th><th>Hoy</th><th>Este mes</th><th>Este año</th></tr></thead>
+      <thead><tr><th>Cuenta</th><th style="text-align:right">Este mes</th></tr></thead>
       <tbody>
         ${filas.map(f => `
           <tr>
             <td>${f.nombre}</td>
-            <td class="monto-pos">+${fmt(f.diario)}</td>
-            <td class="monto-pos">+${fmt(f.mensual)}</td>
-            <td class="monto-pos">+${fmt(f.anual)}</td>
+            <td class="monto-pos" style="text-align:right">+${fmt(f.mensual)}</td>
           </tr>`).join('')}
         <tr style="font-weight:600;border-top:2px solid var(--border)">
-          <td>Total</td><td></td>
-          <td class="monto-pos">+${fmt(total)}</td>
-          <td></td>
+          <td>Total</td>
+          <td class="monto-pos" style="text-align:right">+${fmt(total)}</td>
         </tr>
       </tbody>
     </table>`;
@@ -411,6 +411,116 @@ async function cargarPatrimonioHistorico() {
   });
 }
 
+// ── Gráfica de rendimientos ───────────────────────────────────
+async function cargarGraficaRendimientos() {
+  const [cuentas, rends] = await Promise.all([
+    get('/api/cuentas/'),
+    get('/api/rendimientos/?limite=5000'),
+  ]);
+
+  const debito = (Array.isArray(cuentas) ? cuentas : []).filter(c => c.tipo === 'debito');
+  _debitoIds        = new Set(debito.map(c => c.id));
+  _rendimientosGraf = Array.isArray(rends) ? rends : [];
+
+  document.getElementById('rend-graf-cuenta').innerHTML =
+    '<option value="">Todas las cuentas</option>' +
+    debito.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+
+  _renderGraficaRend();
+}
+
+function filtrarGraficaRend() {
+  _renderGraficaRend();
+}
+
+function _renderGraficaRend() {
+  const cuentaId = parseInt(document.getElementById('rend-graf-cuenta').value) || null;
+
+  // Solo cuentas débito; filtrar por cuenta seleccionada si aplica
+  let datos = _rendimientosGraf.filter(r => _debitoIds.has(r.cuenta_id));
+  if (cuentaId) datos = datos.filter(r => r.cuenta_id === cuentaId);
+
+  // Solo el mes seleccionado en el selector del reporte
+  const mesStr = `${_selAño}-${String(_selMes).padStart(2, '0')}`;
+  datos = datos.filter(r => (r.fecha || '').startsWith(mesStr));
+
+  // Agrupar por día
+  const byDia = {};
+  datos.forEach(r => {
+    const dia = (r.fecha || '').slice(0, 10);
+    if (dia) byDia[dia] = (byDia[dia] || 0) + r.monto;
+  });
+
+  const canvas = document.getElementById('grafica-rendimientos');
+  const empty  = document.getElementById('rend-graf-empty');
+
+  _destroyChart('rendimientos');
+
+  const totalMes = Object.values(byDia).reduce((s, v) => s + v, 0);
+  if (!totalMes) {
+    canvas.style.display = 'none';
+    empty.style.display  = '';
+    return;
+  }
+  canvas.style.display = '';
+  empty.style.display  = 'none';
+
+  // Generar todos los días del mes hasta hoy (o fin de mes si es pasado)
+  const hoy       = new Date();
+  const esMesAct  = _selAño === hoy.getFullYear() && _selMes === (hoy.getMonth() + 1);
+  const ultimoDia = esMesAct ? hoy.getDate() : new Date(_selAño, _selMes, 0).getDate();
+
+  const labels     = [];
+  const acumulados = [];
+  let acum = 0;
+
+  for (let d = 1; d <= ultimoDia; d++) {
+    const dStr = `${mesStr}-${String(d).padStart(2, '0')}`;
+    acum += byDia[dStr] || 0;
+    labels.push(String(d));
+    acumulados.push(+acum.toFixed(2));
+  }
+
+  _charts.rendimientos = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Rendimientos acumulados',
+        data: acumulados,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        fill: true,
+        tension: 0.3,
+      }],
+    },
+    options: {
+      scales: {
+        y: {
+          ticks: { callback: val => fmt(val), font: { size: 11 } },
+          grid: { color: colorGrid },
+        },
+        x: {
+          ticks: { font: { size: 11 }, maxTicksLimit: 15 },
+          grid: { display: false },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `Día ${ctx[0].label} — ${new Date(_selAño, _selMes - 1).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}`,
+            label: ctx => '  Acumulado: +' + fmt(ctx.parsed.y),
+          },
+        },
+      },
+    },
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
   // Cargar períodos con datos para construir selectores
@@ -446,7 +556,14 @@ async function init() {
     cargarRendimientosMes(),
     cargarMetasDash(),
     cargarPatrimonioHistorico(),
+    cargarGraficaRendimientos(),
   ]);
 }
 
 init();
+
+// Sincronizar ícono si ya estaba en modo privado al cargar
+if (document.documentElement.classList.contains('privado')) {
+  const btn = document.getElementById('btn-privacidad');
+  if (btn) { btn.innerHTML = _SVG_OJO_OFF; btn.title = 'Mostrar montos'; }
+}

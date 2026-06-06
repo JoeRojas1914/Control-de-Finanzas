@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — Finanzas</title>
-  <script>if(localStorage.getItem('tema')==='obscuro')document.documentElement.classList.add('dark')</script>
+  <script>
+    if(localStorage.getItem('tema')==='obscuro') document.documentElement.classList.add('dark');
+    if(localStorage.getItem('privacidad')==='1') document.documentElement.classList.add('privado');
+  </script>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -13,11 +16,25 @@
 
   <main class="container">
 
-    <!-- KPIs — 3 columnas forzadas (2 filas de 3) -->
+    <!-- Barra superior -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button id="btn-privacidad" class="btn-icon" onclick="togglePrivacidad()" title="Ocultar montos">
+        <svg id="icono-privacidad" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- KPIs — 3 columnas (2 filas de 3) -->
     <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="metric-card" data-color="blue">
         <p class="metric-label">Patrimonio total</p>
         <p class="metric-value" id="kpi-patrimonio">—</p>
+      </div>
+      <div class="metric-card" data-color="red">
+        <p class="metric-label">Deuda tarjeta</p>
+        <p class="metric-value red" id="kpi-deuda">—</p>
       </div>
       <div class="metric-card" data-color="green">
         <p class="metric-label">Ingresos del mes</p>
@@ -35,33 +52,12 @@
         <p class="metric-label">Tasa de ahorro</p>
         <p class="metric-value" id="kpi-ahorro">—</p>
       </div>
-      <div class="metric-card" data-color="red">
-        <p class="metric-label">Deuda tarjeta</p>
-        <p class="metric-value red" id="kpi-deuda">—</p>
-      </div>
     </div>
 
-    <!-- Cuentas + Últimas transacciones -->
-    <div class="grid-2">
-      <div class="card">
-        <h2 class="card-title">Cuentas de débito</h2>
-        <div id="lista-cuentas-dash">Cargando...</div>
-      </div>
-      <div class="card">
-        <h2 class="card-title">Últimos movimientos</h2>
-        <table class="tabla">
-          <thead>
-            <tr>
-              <th>Descripción</th>
-              <th>Categoría</th>
-              <th>Cuenta</th>
-              <th>Fecha</th>
-              <th style="text-align:right">Monto</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-tx-dash"></tbody>
-        </table>
-      </div>
+    <!-- Cuentas de débito -->
+    <div class="card">
+      <h2 class="card-title">Cuentas de débito</h2>
+      <div id="lista-cuentas-dash">Cargando...</div>
     </div>
 
     <!-- Patrimonio — siempre visible -->
@@ -95,8 +91,15 @@
           </div>
         </div>
         <div class="card">
-          <h2 class="card-title">Rendimientos acumulados</h2>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+            <h2 class="card-title" style="margin:0">Rendimientos acumulados</h2>
+            <select id="rend-graf-cuenta" onchange="filtrarGraficaRend()" style="width:auto;padding:6px 12px;font-size:13px">
+              <option value="">Todas las cuentas</option>
+            </select>
+          </div>
           <div id="tabla-rendimientos">Cargando...</div>
+          <canvas id="grafica-rendimientos" height="130" style="margin-top:16px"></canvas>
+          <p id="rend-graf-empty" style="text-align:center;color:var(--text-muted);padding:24px 0;display:none">Sin rendimientos registrados</p>
         </div>
       </div>
 

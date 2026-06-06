@@ -205,6 +205,33 @@ input:focus, select:focus {
 .tipo-gasto   { background: rgba(220,38,38,0.1);  color: #dc2626; }
 .tipo-trf     { background: rgba(124,58,237,0.1); color: #7c3aed; }
 
+/* ── Botón icono ─────────────────────────────────────────────── */
+.btn-icon {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── Modo privado ─────────────────────────────────────────────── */
+.metric-value,
+.cuenta-saldo,
+.monto-neg,
+.monto-pos,
+canvas { transition: filter 0.25s; }
+
+html.privado .metric-value,
+html.privado .cuenta-saldo,
+html.privado .monto-neg,
+html.privado .monto-pos { filter: blur(8px); user-select: none; }
+
+html.privado canvas { filter: blur(12px); }
+
 /* ── FAB ────────────────────────────────────────────────────── */
 .fab {
   position: fixed;
