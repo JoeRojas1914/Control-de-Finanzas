@@ -260,7 +260,16 @@
           localStorage.setItem('finanzas_auth', encoded);
           window.location.href = '/static/reportes.html';
         } else {
-          err.textContent = data.detail || 'Error al crear la cuenta';
+          const detail = data.detail || 'Error al crear la cuenta';
+          if (detail.toLowerCase().includes('usuario')) {
+            irAPaso(1);
+            document.getElementById('error-p1').textContent = detail;
+          } else if (detail.toLowerCase().includes('correo')) {
+            irAPaso(2);
+            document.getElementById('error-p2').textContent = detail;
+          } else {
+            err.textContent = detail;
+          }
         }
       } catch {
         err.textContent = 'No se pudo conectar con el servidor';

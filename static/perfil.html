@@ -30,6 +30,10 @@
         <h2 class="card-title">Información personal</h2>
 
         <div class="form-group">
+          <label>Nombre de usuario</label>
+          <input type="text" id="p-username" readonly style="opacity:0.6;cursor:default;background:var(--surface2)">
+        </div>
+        <div class="form-group">
           <label>Nombre</label>
           <input type="text" id="p-nombre" placeholder="Juan">
         </div>
@@ -154,6 +158,7 @@
       av.textContent = _iniciales(perfil.nombre, perfil.apellido, perfil.username);
       av.style.background = perfil.avatar_color || '#6366f1';
 
+      document.getElementById('p-username').value   = perfil.username  || '';
       document.getElementById('p-nombre').value    = perfil.nombre    || '';
       document.getElementById('p-apellido').value  = perfil.apellido  || '';
       document.getElementById('p-correo').value    = perfil.correo    || '';
