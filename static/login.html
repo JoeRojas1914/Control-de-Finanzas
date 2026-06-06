@@ -256,8 +256,13 @@
         });
         const data = await res.json();
         if (res.ok) {
-          const encoded = btoa(usuario + ':' + clave);
-          localStorage.setItem('finanzas_auth', encoded);
+          const loginRes  = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: usuario, password: clave }),
+          });
+          const loginData = await loginRes.json();
+          localStorage.setItem('finanzas_auth', loginData.access_token);
           window.location.href = '/static/reportes.html';
         } else {
           const detail = data.detail || 'Error al crear la cuenta';
@@ -292,14 +297,18 @@
       btn.disabled    = true;
       errorMsg.textContent = '';
 
-      const encoded = btoa(usuario + ':' + clave);
       try {
-        const res = await fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + encoded } });
+        const res  = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usuario, password: clave }),
+        });
+        const data = await res.json();
         if (res.ok) {
-          localStorage.setItem('finanzas_auth', encoded);
+          localStorage.setItem('finanzas_auth', data.access_token);
           window.location.href = '/static/reportes.html';
         } else {
-          errorMsg.textContent = 'Usuario, correo o contraseña incorrectos';
+          errorMsg.textContent = data.detail || 'Usuario, correo o contraseña incorrectos';
         }
       } catch {
         errorMsg.textContent = 'No se pudo conectar con el servidor';
@@ -314,7 +323,7 @@
 
     const authGuardado = localStorage.getItem('finanzas_auth');
     if (authGuardado) {
-      fetch('/api/cuentas/', { headers: { 'Authorization': 'Basic ' + authGuardado } })
+      fetch('/api/cuentas/', { headers: { 'Authorization': 'Bearer ' + authGuardado } })
         .then(r => { if (r.ok) window.location.href = '/static/reportes.html'; });
     }
 

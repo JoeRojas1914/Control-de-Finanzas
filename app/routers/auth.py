@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -7,9 +7,15 @@ from app.database import get_db
 from app.models import (Usuario, Cuenta, Transaccion, RendimientoDiario, Transferencia,
                         TransaccionRecurrente, HorarioRendimiento, RendimientoProgramado,
                         Presupuesto, Meta, Categoria)
-from app.auth import hash_password, verify_password, get_current_user
+from app.auth import hash_password, verify_password, get_current_user, create_token
+from app.limiter import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 class RegisterRequest(BaseModel):
@@ -37,8 +43,21 @@ class PasswordUpdate(BaseModel):
     clave_nueva:  str
 
 
+@router.post("/login")
+@limiter.limit("10/minute")
+def login(request: Request, datos: LoginRequest, db: Session = Depends(get_db)):
+    identifier = datos.username.strip().lower()
+    user = db.query(Usuario).filter(Usuario.username == identifier).first()
+    if not user:
+        user = db.query(Usuario).filter(Usuario.correo == identifier).first()
+    if not user or not verify_password(datos.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
+    return {"access_token": create_token(user.id), "token_type": "bearer"}
+
+
 @router.post("/register")
-def register(datos: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/hour")
+def register(request: Request, datos: RegisterRequest, db: Session = Depends(get_db)):
     username = datos.username.strip().lower()
     if not username or not datos.password:
         raise HTTPException(status_code=422, detail="Usuario y contraseña son obligatorios")

@@ -215,7 +215,7 @@
       );
       if (!ok) return;
       try {
-        await fetch('/api/auth/me', { method: 'DELETE', headers: { 'Authorization': 'Basic ' + localStorage.getItem('finanzas_auth') } });
+        await fetch('/api/auth/me', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('finanzas_auth') } });
         localStorage.removeItem('finanzas_auth');
         localStorage.removeItem('finanzas_perfil');
         window.location.href = '/static/login.html';

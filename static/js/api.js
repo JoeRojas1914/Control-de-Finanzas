@@ -1,8 +1,8 @@
 const BASE = '';
 
 function getAuthHeader() {
-  const c = localStorage.getItem('finanzas_auth');
-  return c ? { 'Authorization': 'Basic ' + c } : {};
+  const token = localStorage.getItem('finanzas_auth');
+  return token ? { 'Authorization': 'Bearer ' + token } : {};
 }
 
 function manejar401() {

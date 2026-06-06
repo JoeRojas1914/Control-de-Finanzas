@@ -4,8 +4,11 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.database import engine
 from app import models
+from app.limiter import limiter
 from app.routers import (
     auth, cuentas, transacciones, rendimientos, dashboard,
     categorias, reportes, recurrentes, presupuestos,
@@ -37,6 +40,8 @@ def _migrar():
 _migrar()
 
 app = FastAPI(title="Control de Finanzas")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # /api/auth/register es público — los demás endpoints verifican usuario dentro del router
 app.include_router(auth.router)
