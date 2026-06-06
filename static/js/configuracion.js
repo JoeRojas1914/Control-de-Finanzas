@@ -1,4 +1,5 @@
 let categorias = [];
+let _metasConf = [];
 
 async function cargarCategorias() {
   document.getElementById('lista-categorias').innerHTML = _skeletonLista(4);
@@ -284,6 +285,43 @@ function _setIconoActivo(key) {
   document.getElementById('meta-icono').value = key;
 }
 
+// ── Abonar a meta ─────────────────────────────────────────────
+
+function abrirModalAbonar(id) {
+  const meta = _metasConf.find(m => m.id === id);
+  if (!meta) return;
+  document.getElementById('modal-abonar-titulo').textContent = `Abonar a "${meta.nombre}"`;
+  document.getElementById('abonar-id').value     = id;
+  document.getElementById('abonar-actual').value = meta.monto_actual;
+  document.getElementById('abonar-monto').value  = '';
+  document.getElementById('modal-abonar').classList.add('abierto');
+}
+
+function cerrarModalAbonar() {
+  document.getElementById('modal-abonar').classList.remove('abierto');
+}
+
+document.getElementById('modal-abonar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalAbonar();
+});
+
+async function abonarMeta() {
+  const id     = parseInt(document.getElementById('abonar-id').value);
+  const actual = parseFloat(document.getElementById('abonar-actual').value) || 0;
+  const aporte = parseFloat(document.getElementById('abonar-monto').value);
+
+  if (!aporte || aporte <= 0) { toast('Ingresa un monto válido', 'err'); return; }
+
+  try {
+    await patch(`/api/metas/${id}`, { monto_actual: +(actual + aporte).toFixed(2) });
+    toast('Aporte registrado', 'ok');
+    cerrarModalAbonar();
+    cargarMetas();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
 async function cargarMetas() {
   document.getElementById('lista-metas').innerHTML = _skeletonLista(2);
   const metas = await get('/api/metas/');
@@ -292,6 +330,7 @@ async function cargarMetas() {
     el.innerHTML = '<div class="empty-state">Sin metas definidas</div>';
     return;
   }
+  _metasConf = metas;
   el.innerHTML = metas.map(m => {
     const pct   = m.monto_objetivo > 0
       ? Math.min(Math.round(m.monto_actual / m.monto_objetivo * 100), 100)
@@ -310,6 +349,7 @@ async function cargarMetas() {
                 <span style="font-size:12px;color:${color};font-weight:500">
                   ${fmt(m.monto_actual)} / ${fmt(m.monto_objetivo)} (${pct}%)
                 </span>
+                <button class="btn-sm" onclick="abrirModalAbonar(${m.id})">+ Abonar</button>
                 <button class="btn-sm" onclick="abrirModalMeta(${m.id})">Editar</button>
                 <button class="btn-sm btn-danger" onclick="eliminarMeta(${m.id}, ${JSON.stringify(m.nombre)})">Eliminar</button>
               </div>

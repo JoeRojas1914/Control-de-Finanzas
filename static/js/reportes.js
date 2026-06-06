@@ -14,6 +14,7 @@ let _charts = {};
 let _anualCargado = false;
 let _rendimientosGraf = [];
 let _debitoIds        = new Set();
+let _metasDash        = [];
 
 // ── Helpers ───────────────────────────────────────────────────
 function _destroyChart(key) {
@@ -252,6 +253,7 @@ async function cargarMetasDash() {
   const card  = document.getElementById('card-metas');
   if (!metas.length) { card.style.display = 'none'; return; }
 
+  _metasDash = metas;
   card.style.display = 'block';
   document.getElementById('lista-metas-dash').innerHTML = metas.map(m => {
     const pct  = m.monto_objetivo > 0 ? Math.min(Math.round(m.monto_actual / m.monto_objetivo * 100), 100) : 0;
@@ -273,7 +275,10 @@ async function cargarMetasDash() {
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
             <span class="cuenta-nombre">${m.nombre}</span>
-            <span style="font-size:12px;color:var(--accent);font-weight:500;flex-shrink:0">${fmt(m.monto_actual)} / ${fmt(m.monto_objetivo)} (${pct}%)</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              <span style="font-size:12px;color:var(--accent);font-weight:500">${fmt(m.monto_actual)} / ${fmt(m.monto_objetivo)} (${pct}%)</span>
+              <button class="btn-sm" onclick="abrirModalAbonar(${m.id})">+ Abonar</button>
+            </div>
           </div>
           <div class="progress-bar" style="margin-top:6px">
             <div class="progress-fill" style="width:${pct}%;background:${done ? '#10b981' : 'var(--accent)'}"></div>
@@ -282,6 +287,42 @@ async function cargarMetasDash() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ── Abonar a meta ─────────────────────────────────────────────
+function abrirModalAbonar(id) {
+  const meta = _metasDash.find(m => m.id === id);
+  if (!meta) return;
+  document.getElementById('modal-abonar-titulo').textContent = `Abonar a "${meta.nombre}"`;
+  document.getElementById('abonar-id').value     = id;
+  document.getElementById('abonar-actual').value = meta.monto_actual;
+  document.getElementById('abonar-monto').value  = '';
+  document.getElementById('modal-abonar').classList.add('abierto');
+}
+
+function cerrarModalAbonar() {
+  document.getElementById('modal-abonar').classList.remove('abierto');
+}
+
+document.getElementById('modal-abonar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalAbonar();
+});
+
+async function abonarMeta() {
+  const id     = parseInt(document.getElementById('abonar-id').value);
+  const actual = parseFloat(document.getElementById('abonar-actual').value) || 0;
+  const aporte = parseFloat(document.getElementById('abonar-monto').value);
+
+  if (!aporte || aporte <= 0) { toast('Ingresa un monto válido', 'err'); return; }
+
+  try {
+    await patch(`/api/metas/${id}`, { monto_actual: +(actual + aporte).toFixed(2) });
+    toast('Aporte registrado', 'ok');
+    cerrarModalAbonar();
+    cargarMetasDash();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 }
 
 // ── Rendimientos ──────────────────────────────────────────────
